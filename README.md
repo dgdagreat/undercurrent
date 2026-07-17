@@ -47,10 +47,19 @@ observed = trend + seasonal + residual
 ```
 
 and the scoring factors judge the pieces that actually signal risk — the
-**trend** (is the business growing or shrinking?) and the **residual**
-(unpredictable noise) — while ignoring the piece that is merely predictable (the
+**trend** (is the business growing or shrinking?) and the *unpredictable*
+variation — while ignoring the piece that is merely predictable (the
 **seasonal** swing). Coverage metrics like runway are measured across the whole
 cycle, at the seasonal *trough*, rather than month-to-month.
+
+Crucially, "unpredictable" is measured **out-of-sample**: does one year's
+monthly shape actually predict the next year's? A seasonal peak that returns
+every year is predictable and doesn't count against the business; revenue that
+lurches around with no repeatable pattern does. (This matters — a naive
+"leftover residual" measure overfits badly with only ~2 years of data and would
+let a business with pure-noise revenue masquerade as rock-steady. The
+cross-validated version is what lets the model tell a *seasonal* extreme apart
+from a genuinely *erratic* one, which is the whole game.)
 
 So a landscaper isn't penalized for its winter, and an agency isn't penalized
 for lumpy-but-reliable collections. A business is only marked down for things
@@ -71,7 +80,7 @@ benchmark thresholds (no fitted coefficients, nothing hidden), then weighted:
 | Factor | Weight | What it measures |
 | --- | --- | --- |
 | **Cash runway (trough)** | 25 | Months of expenses covered by cash at the seasonal low point — surviving the trough is what actually kills these businesses |
-| **Revenue stability** | 20 | Month-to-month noise in the **deseasonalized** revenue (predictable swings removed first) |
+| **Revenue stability** | 20 | Out-of-sample *unpredictability*: how badly one year's monthly shape fails to predict the next (predictable seasonality doesn't count) |
 | **Growth trend** | 15 | Direction of the deseasonalized revenue line — growing, flat, or eroding |
 | **Debt-service coverage** | 15 | Operating cash flow ÷ scheduled loan payments (DSCR) |
 | **Receivables health** | 15 | Days-sales-outstanding and share of overdue invoices (invoice businesses only) |
@@ -95,16 +104,35 @@ The weighted total maps to a letter grade, a risk tier, and an
 Every factor returns not just a number but a **plain-English explanation** of
 why it landed where it did — that breakdown is the centerpiece of the dashboard.
 
-### The six sample businesses
+### The ten sample businesses
+
+The set spans the full range — five Approve, one Review, four Decline — so the
+score visibly discriminates rather than rubber-stamping everyone.
+
+**Approved — healthy, including the "hard" seasonal cases a naive model breaks on**
 
 | Business | Profile | Result | Why it's interesting |
 | --- | --- | --- | --- |
 | Northwind Analytics | Steady SaaS | **A · Approve** | The easy case — smooth recurring revenue |
-| Evergreen Grounds Co. | Seasonal landscaping | **A · Approve** | Huge but predictable swings; a naive model would over-penalize it. It scores *as high as the SaaS business* |
-| Meridian Creative | Invoice-driven agency | **B · Approve** | Lumpy, delayed collections that look volatile but are reliable |
-| Harbor Street Goods | Declining retailer | **C · Review** | Looks fine month-to-month, but the deseasonalized trend reveals slow erosion behind a strong holiday quarter — flagged for a second look, not declined |
 | Big Bang Fireworks | Twin-peak seasonal retail | **A · Approve** | Revenue crammed into two short windows (July 4th + New Year's Eve). A multi-modal season the decomposition still handles cleanly |
+| Evergreen Grounds Co. | Seasonal landscaping | **A · Approve** | Huge but predictable swings; a naive model would over-penalize it. It scores *as high as the SaaS business* |
 | Fright Night Pop-Up | Single-month seasonal retail | **A · Approve** | The most extreme profile — ~60% of the year's revenue lands in October — yet it scores an A, because it banks the season's cash to cover eleven quiet months |
+| Meridian Creative | Invoice-driven agency | **B · Approve** | Lumpy, delayed collections that look volatile but are reliable — a full book smooths out and the receivables are clean |
+
+**Flagged for review — healthy on the surface, risk underneath**
+
+| Business | Profile | Result | Why it's interesting |
+| --- | --- | --- | --- |
+| Harbor Street Goods | Declining retailer | **C · Review** | Looks fine month-to-month, but the deseasonalized trend reveals slow erosion behind a strong holiday quarter — a second look, not a rejection |
+
+**Declined — genuinely distressed, each failing a different way**
+
+| Business | Profile | Result | Why it's interesting |
+| --- | --- | --- | --- |
+| Overland Freight Co. | Overleveraged trucking | **E · Decline** | Profitable on operations, but a debt-financed fleet leaves cash flow unable to cover the loan payments (DSCR < 1) |
+| Cliffside Bistro | Failing restaurant | **E · Decline** | Falling covers against rigid rent and payroll, plus a loan it can no longer cover — burning into overdraft |
+| Stalled Studio | Collections failure | **E · Decline** | Does the work but can't get paid: long payment lags and a growing pile of overdue invoices starve it of cash |
+| Pivot Labs | Erratic startup | **E · Decline** | Genuinely pattern-less revenue against a fixed burn. The key contrast: this is *unpredictable* volatility the model rightly punishes — unlike the Halloween pop-up's *predictable* extremes |
 
 ---
 

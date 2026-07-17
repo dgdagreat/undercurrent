@@ -151,10 +151,12 @@ def gen_invoice() -> GeneratedBusiness:
     txns: list[dict] = []
     invoices: list[dict] = []
     for ms in months:
-        # Work is delivered smoothly: 4-6 invoices issued each month.
-        n_invoices = rng.randint(4, 7)
+        # A healthy agency runs a full, steady book — many smaller invoices each
+        # month, so collections smooth out month to month even though any one
+        # invoice pays on its own schedule.
+        n_invoices = rng.randint(9, 13)
         for _ in range(n_invoices):
-            amount = float(rng.randint(9_000, 26_000))
+            amount = float(rng.randint(6_000, 13_000))
             issued = _day(ms, int(rng.randint(2, 26)))
             terms = int(rng.choice([30, 45, 45, 60]))
             due = issued + timedelta(days=terms)
@@ -184,7 +186,7 @@ def gen_invoice() -> GeneratedBusiness:
         founded_date=date(2019, 9, 1),
         description="Project-based creative agency with steady payroll but lumpy, "
                     "delayed client payments on 30-60 day terms.",
-        opening_balance=155_000,
+        opening_balance=205_000,
         transactions=txns,
         invoices=invoices,
     )
@@ -314,8 +316,160 @@ def gen_halloween() -> GeneratedBusiness:
     )
 
 
+# --------------------------------------------------------------------------- #
+# 7. Failing restaurant (decline + rigid costs + unpayable debt -> Decline)    #
+# --------------------------------------------------------------------------- #
+def gen_restaurant() -> GeneratedBusiness:
+    rng = np.random.RandomState(77)
+    months = _month_starts(MONTHS, END_DATE)
+    base = 62_000.0
+    txns: list[dict] = []
+    for ms in months:
+        base *= 0.975  # ~2.5%/mo decline — a restaurant in real trouble
+        revenue = max(0.0, base * (1 + rng.normal(0, 0.06)))
+        txns.append(_tx(_day(ms, 4), revenue * 0.5, "in", "Dining sales", "revenue",
+                        "POS settlements"))
+        txns.append(_tx(_day(ms, 19), revenue * 0.5, "in", "Dining sales", "revenue",
+                        "POS settlements"))
+        # Food cost flexes with covers; rent, payroll and the loan do not.
+        txns.append(_tx(_day(ms, 6), -revenue * 0.34, "out", "Food & beverage cost",
+                        "expense", "Food suppliers"))
+        txns.append(_tx(_day(ms, 1), -12_500, "out", "Restaurant rent", "expense",
+                        "Landlord"))
+        txns.append(_tx(_day(ms, 1), -27_000, "out", "Payroll", "expense", "Staff"))
+        txns.append(_tx(_day(ms, 3), -4_500, "out", "SBA loan", "loan_payment",
+                        "SBA loan"))
+    return GeneratedBusiness(
+        name="Cliffside Bistro",
+        industry="Restaurant",
+        profile_type="restaurant",
+        founded_date=date(2018, 2, 1),
+        description="Full-service restaurant with falling covers, rigid rent and "
+                    "payroll, and a loan its shrinking sales no longer cover — "
+                    "burning cash into overdraft.",
+        opening_balance=22_000,
+        transactions=txns,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 8. Overleveraged trucking (operations fine, debt service kills it)           #
+# --------------------------------------------------------------------------- #
+def gen_overleveraged() -> GeneratedBusiness:
+    rng = np.random.RandomState(88)
+    months = _month_starts(MONTHS, END_DATE)
+    base = 82_000.0
+    txns: list[dict] = []
+    for ms in months:
+        revenue = base * (1 + rng.normal(0, 0.04))
+        txns.append(_tx(_day(ms, 3), revenue * 0.5, "in", "Freight revenue", "revenue",
+                        "Shippers"))
+        txns.append(_tx(_day(ms, 17), revenue * 0.5, "in", "Freight revenue", "revenue",
+                        "Shippers"))
+        txns.append(_tx(_day(ms, 7), -revenue * 0.55, "out", "Fuel & maintenance",
+                        "expense", "Suppliers"))
+        txns.append(_tx(_day(ms, 1), -16_000, "out", "Payroll", "expense", "Drivers"))
+        # A fleet financed almost entirely on debt — payments swamp the cash.
+        txns.append(_tx(_day(ms, 5), -27_000, "out", "Fleet loans", "loan_payment",
+                        "Equipment lenders"))
+    return GeneratedBusiness(
+        name="Overland Freight Co.",
+        industry="Trucking / Logistics",
+        profile_type="overleveraged",
+        founded_date=date(2020, 6, 1),
+        description="Profitable on operations, but a fleet bought almost entirely on "
+                    "debt leaves cash flow unable to cover the monthly loan "
+                    "payments (DSCR below 1).",
+        opening_balance=35_000,
+        transactions=txns,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 9. Erratic startup (genuine, pattern-less volatility — NOT seasonality)      #
+# --------------------------------------------------------------------------- #
+def gen_erratic() -> GeneratedBusiness:
+    rng = np.random.RandomState(99)
+    months = _month_starts(MONTHS, END_DATE)
+    txns: list[dict] = []
+    for ms in months:
+        # No structure at all: big random swings, the occasional dead month.
+        revenue = max(0.0, 42_000 + rng.normal(0, 33_000))
+        if rng.random() < 0.22:
+            revenue *= 0.15  # a month that nearly flatlines
+        txns.append(_tx(_day(ms, 9), revenue * 0.6, "in", "Project revenue", "revenue",
+                        "Ad-hoc clients"))
+        txns.append(_tx(_day(ms, 21), revenue * 0.4, "in", "Project revenue", "revenue",
+                        "Ad-hoc clients"))
+        # Fixed burn regardless of what came in — the classic startup problem.
+        txns.append(_tx(_day(ms, 1), -38_000, "out", "Payroll", "expense", "Team"))
+        txns.append(_tx(_day(ms, 10), -6_000, "out", "Software & ops", "expense",
+                        "Vendors"))
+    return GeneratedBusiness(
+        name="Pivot Labs",
+        industry="Early-stage Startup",
+        profile_type="erratic",
+        founded_date=date(2023, 1, 1),
+        description="Pre-product-market-fit startup with unpredictable, pattern-less "
+                    "revenue against a fixed monthly burn. This is genuine "
+                    "volatility — the kind the model is right to penalize, unlike "
+                    "seasonality.",
+        opening_balance=52_000,
+        transactions=txns,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 10. Collections failure (does the work, can't get paid -> AR crisis)         #
+# --------------------------------------------------------------------------- #
+def gen_collections() -> GeneratedBusiness:
+    rng = np.random.RandomState(111)
+    months = _month_starts(MONTHS, END_DATE)
+    txns: list[dict] = []
+    invoices: list[dict] = []
+    for ms in months:
+        n_invoices = rng.randint(4, 7)
+        for _ in range(n_invoices):
+            amount = float(rng.randint(9_000, 24_000))
+            issued = _day(ms, int(rng.randint(2, 26)))
+            terms = int(rng.choice([30, 45, 60]))
+            due = issued + timedelta(days=terms)
+            # Collections are broken: ~40% never pay in-window, the rest pay very
+            # late (30-90 days past terms).
+            if rng.random() < 0.4:
+                invoices.append(dict(issued_date=issued, due_date=due, paid_date=None,
+                                     amount=amount, status="outstanding"))
+                continue
+            lag = terms + int(rng.randint(30, 90))
+            paid = issued + timedelta(days=lag)
+            if paid <= END_DATE:
+                invoices.append(dict(issued_date=issued, due_date=due, paid_date=paid,
+                                     amount=amount, status="paid"))
+                txns.append(_tx(paid, amount, "in", "Client invoice", "revenue",
+                                "Slow-paying clients"))
+            else:
+                invoices.append(dict(issued_date=issued, due_date=due, paid_date=None,
+                                     amount=amount, status="outstanding"))
+        # Payroll and rent don't wait for the clients to pay.
+        txns.append(_tx(_day(ms, 1), -6_000, "out", "Office rent", "expense", "Landlord"))
+        txns.append(_tx(_day(ms, 1), -34_000, "out", "Payroll", "expense", "Staff"))
+    return GeneratedBusiness(
+        name="Stalled Studio",
+        industry="Creative Agency",
+        profile_type="collections",
+        founded_date=date(2019, 3, 1),
+        description="An agency doing the work but failing to collect — long payment "
+                    "lags and a growing pile of overdue, unpaid invoices starve it "
+                    "of the cash it has technically earned.",
+        opening_balance=60_000,
+        transactions=txns,
+        invoices=invoices,
+    )
+
+
 def all_businesses() -> list[GeneratedBusiness]:
     return [
         gen_saas(), gen_seasonal(), gen_invoice(), gen_declining(),
         gen_fireworks(), gen_halloween(),
+        gen_restaurant(), gen_overleveraged(), gen_erratic(), gen_collections(),
     ]

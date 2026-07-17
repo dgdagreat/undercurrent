@@ -98,3 +98,55 @@ def annualized_trend_pct(series: pd.Series, period: int = 12) -> float:
     if avg == 0:
         return 0.0
     return float((slope * period) / avg * 100.0)
+
+
+def predictability_cv(series: pd.Series, period: int = 12) -> float:
+    """Cross-validated measure of how *unpredictable* a revenue series is.
+
+    This is the honest version of "revenue stability." The naive approach —
+    decompose the series and look at the leftover residual — overfits badly when
+    you only have ~2 years of data: the seasonal component ends up fitting a
+    unique value to almost every calendar month, so the residual collapses to
+    near zero for *any* series, random or seasonal. That would let a business
+    with pure-noise revenue masquerade as rock-stable.
+
+    Instead we ask a question that can't be gamed by overfitting: **does one
+    year's monthly shape predict the next year's?** We split the window into
+    consecutive `period`-length blocks (which keeps calendar months aligned),
+    normalize each year by its own mean to remove growth/level, use each year's
+    shape to predict the *other* year out-of-sample, and return the residual as
+    a coefficient of variation.
+
+      - A seasonal business repeats (its October spike shows up both years) →
+        each year predicts the other → tiny residual → looks stable/predictable.
+      - A genuinely erratic business has no repeatable shape → the prediction
+        fails → large residual → correctly flagged as volatile.
+
+    With fewer than two full cycles we can't cross-validate seasonality, so we
+    fall back to the raw coefficient of variation.
+    """
+    series = series.sort_index()
+    mean = float(series.mean())
+    if mean <= 0:
+        return 1.0
+
+    n = len(series)
+    if n < 2 * period:
+        return float(series.std(ddof=0) / mean)
+
+    vals = series.to_numpy(dtype=float)[-2 * period:]
+    y1, y2 = vals[:period], vals[period:]
+    m1, m2 = y1.mean(), y2.mean()
+    if m1 <= 0 or m2 <= 0:
+        return float(series.std(ddof=0) / mean)
+
+    # Compare the two years' *shapes*, not their absolute levels. Dividing each
+    # year by its own mean removes growth and level, leaving a monthly "share"
+    # profile (each sums to `period`, so the average share is 1). The average
+    # absolute month-by-month disagreement between the two shapes is our
+    # unpredictability score: near 0 when the pattern repeats (any shape, spiky
+    # or flat), large when this year looks nothing like last year. Working in
+    # share-space keeps a huge-but-repeatable seasonal peak from blowing up the
+    # metric the way an absolute-level comparison would.
+    shape1, shape2 = y1 / m1, y2 / m2
+    return float(np.abs(shape1 - shape2).sum() / period)

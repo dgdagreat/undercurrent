@@ -83,8 +83,14 @@ def prepare_monthly(
     # Use a timestamp index so decomposition can read .index.month.
     monthly.index = all_months.to_timestamp(how="end").normalize()
 
-    # Restrict to the trailing lookback window ending at as_of.
-    monthly = monthly[monthly.index <= as_of]
+    # Restrict to the trailing lookback window ending in the as_of *month*.
+    # Compare by month, not raw timestamp: the index holds month-END dates
+    # (e.g. Jun 30) while as_of is usually a mid-month transaction date
+    # (e.g. Jun 22), so a naive `index <= as_of` would silently drop the most
+    # recent month — losing a full month of history and misaligning the
+    # year-over-year comparison in the stability factor.
+    as_of_month = as_of.to_period("M")
+    monthly = monthly[monthly.index.to_period("M") <= as_of_month]
     monthly = monthly.tail(config.LOOKBACK_MONTHS)
     return monthly
 

@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .decompose import annualized_trend_pct, decompose_monthly
+from .decompose import annualized_trend_pct, predictability_cv
 
 
 @dataclass
@@ -48,25 +48,22 @@ def _piecewise(x: float, points: list[tuple[float, float]]) -> float:
 # --------------------------------------------------------------------------- #
 def revenue_stability(monthly: pd.DataFrame) -> FactorResult:
     revenue = monthly["revenue"]
-    decomp = decompose_monthly(revenue)
-    residual = decomp.residual.dropna()
-    mean_rev = revenue.mean()
+    # How *unpredictable* is revenue once you account for a repeatable seasonal
+    # shape? Measured out-of-sample (does one year predict the next?) so a
+    # genuinely erratic business can't hide behind an overfit season. See
+    # decompose.predictability_cv for the full rationale.
+    cv = predictability_cv(revenue)
 
-    if mean_rev <= 0 or residual.empty:
-        cv = 1.0
-    else:
-        # Coefficient of variation of the *unpredictable* leftover only.
-        cv = float(residual.std(ddof=0) / mean_rev)
-
-    sub = _piecewise(cv, [(0.05, 100), (0.15, 85), (0.30, 60), (0.50, 30), (0.80, 0)])
+    sub = _piecewise(
+        cv, [(0.05, 100), (0.20, 90), (0.40, 70), (0.60, 45), (0.85, 15), (1.20, 0)])
     return FactorResult(
         name="revenue_stability",
         sub_score=sub,
-        raw_value=f"{cv * 100:.0f}% residual variation",
+        raw_value=f"{cv * 100:.0f}% unpredictable variation",
         explanation=(
-            "Revenue is measured after stripping out its seasonal pattern, so "
-            "predictable swings don't count against the business. What remains "
-            f"is {cv * 100:.0f}% month-to-month noise around the trend."
+            "Predictable swings — a seasonal peak that returns every year — don't "
+            "count against the business; only variation that one year fails to "
+            f"predict in the next does. That unpredictable share is {cv * 100:.0f}%."
         ),
     )
 

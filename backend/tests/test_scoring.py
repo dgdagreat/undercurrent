@@ -146,6 +146,25 @@ def test_missing_required_column_raises_valueerror():
         score_business(bad, None, 0.0)
 
 
+def test_failing_businesses_are_declined():
+    """The four distressed profiles must land below 60 with a Decline verdict —
+    a model that can't reject anyone isn't underwriting."""
+    for profile in ("restaurant", "overleveraged", "erratic", "collections"):
+        r = _score_of(profile)
+        assert r.overall_score < 60, f"{profile} scored {r.overall_score}"
+        assert r.recommendation == "Decline"
+
+
+def test_erratic_volatility_penalized_unlike_seasonality():
+    """The thesis, stated as a contrast: genuine pattern-less volatility must be
+    scored far worse on stability than an *extreme* but predictable season."""
+    erratic = next(f for f in _score_of("erratic").factors
+                   if f.name == "revenue_stability").sub_score
+    seasonal = next(f for f in _score_of("halloween").factors
+                    if f.name == "revenue_stability").sub_score
+    assert seasonal > erratic + 30
+
+
 def test_breakdown_orders_hurts_before_helps_and_excludes_last():
     """The 'why this score' panel must surface drags first and excluded factors
     last — never bury a hurting factor beneath the ones that helped."""
