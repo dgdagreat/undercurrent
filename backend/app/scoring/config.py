@@ -23,13 +23,17 @@ WEIGHTS = {
     "expense_flexibility": 10,
 }
 
-# Grade bands on the 0-100 overall score.
+# Base letter-grade bands on the 0-100 overall score. We use the familiar
+# school-style A/B/C/D/F scale (no "E" — a bottom grade of F reads unambiguously
+# as "fail," whereas E makes people hesitate). Each 10-point band is further
+# split into +/- thirds for finer granularity (see engine._grade_for); F is left
+# plain, as it is on a real report card. Fields: (min_score, letter, tier, rec).
 GRADE_BANDS = [
     (90, "A", "Very Low", "Approve"),
     (80, "B", "Low", "Approve"),
     (70, "C", "Moderate", "Review"),
     (60, "D", "Elevated", "Review"),
-    (0, "E", "High", "Decline"),
+    (0, "F", "High", "Decline"),
 ]
 
 # A sub-score at or above HELPED reads as a positive factor in the UI; at or

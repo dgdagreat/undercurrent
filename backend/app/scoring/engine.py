@@ -95,11 +95,27 @@ def prepare_monthly(
     return monthly
 
 
+def _with_sign(score: float, cutoff: float, letter: str) -> str:
+    """Add a +/- suffix by where the score sits within its 10-point band.
+
+    Bottom third -> "-", middle third -> plain, top third -> "+". F is left
+    plain (no F+/F-), matching the school-report convention.
+    """
+    if letter == "F":
+        return "F"
+    pos = score - cutoff  # 0-10 within the band
+    if pos < 10 / 3:
+        return letter + "-"
+    if pos < 20 / 3:
+        return letter
+    return letter + "+"
+
+
 def _grade_for(score: float):
-    for cutoff, grade, tier, rec in config.GRADE_BANDS:
+    for cutoff, letter, tier, rec in config.GRADE_BANDS:
         if score >= cutoff:
-            return grade, tier, rec
-    return "E", "High", "Decline"
+            return _with_sign(score, cutoff, letter), tier, rec
+    return "F", "High", "Decline"
 
 
 def _direction(sub_score: float) -> str:

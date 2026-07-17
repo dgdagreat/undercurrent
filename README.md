@@ -99,14 +99,20 @@ The weighted total maps to a letter grade, a risk tier, and an
 | 80–89 | B | Low | Approve |
 | 70–79 | C | Moderate | Review |
 | 60–69 | D | Elevated | Review |
-| < 60 | E | High | Decline |
+| < 60 | F | High | Decline |
+
+The familiar A/B/C/D/**F** scale — no "E" (a bottom grade of F reads
+unambiguously as "fail"). Each band is split into **+/- thirds** for finer
+resolution (A+ … F), so the letter carries more signal than five buckets would;
+F is left plain, as on a report card. The risk tier and recommendation follow
+the base letter.
 
 Every factor returns not just a number but a **plain-English explanation** of
 why it landed where it did — that breakdown is the centerpiece of the dashboard.
 
 ### The thirteen sample businesses
 
-The set spans the full A–E range — five Approve, four Review (one C, three D),
+The set spans the full A–F range — five Approve, four Review (one C, three D),
 four Decline — so the score visibly discriminates rather than rubber-stamping
 everyone.
 

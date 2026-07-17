@@ -5,7 +5,7 @@ export const GRADE_COLORS = {
   B: { fg: "#0d9488", bg: "#f0fdfa" },
   C: { fg: "#d97706", bg: "#fffbeb" },
   D: { fg: "#ea580c", bg: "#fff7ed" },
-  E: { fg: "#dc2626", bg: "#fef2f2" },
+  F: { fg: "#dc2626", bg: "#fef2f2" },
 };
 
 export const REC_COLORS = {
@@ -23,7 +23,8 @@ export function scoreColor(score) {
 }
 
 export function gradeColor(grade) {
-  return GRADE_COLORS[grade] || GRADE_COLORS.C;
+  // Grades carry a +/- suffix (e.g. "A-", "D+"); color by the base letter.
+  return GRADE_COLORS[(grade || "")[0]] || GRADE_COLORS.C;
 }
 
 export const usd = (n) =>
