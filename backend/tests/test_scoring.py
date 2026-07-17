@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from app.generators import all_businesses
 from app.scoring import score_business
 from app.scoring.decompose import decompose_monthly
+from app.scoring.engine import InsufficientDataError
 from app.scoring.factors import _piecewise
 
 
@@ -124,3 +126,35 @@ def test_cash_only_business_drops_receivables():
     r = _score_of("saas")
     receivables = next(f for f in r.factors if f.name == "receivables")
     assert receivables.weight == 0  # not applicable -> weight redistributed
+
+
+# --------------------------------------------------------------------------- #
+# Robustness: empty ledger, bad input, and breakdown ordering                 #
+# --------------------------------------------------------------------------- #
+def test_empty_transactions_raises_insufficient_data():
+    """A business with no ledger is unscoreable, not risky — clear error, no crash."""
+    empty = pd.DataFrame(columns=["txn_date", "amount", "kind", "direction"])
+    with pytest.raises(InsufficientDataError):
+        score_business(empty, None, 0.0)
+    with pytest.raises(InsufficientDataError):
+        score_business(None, None, 0.0)
+
+
+def test_missing_required_column_raises_valueerror():
+    bad = pd.DataFrame([{"txn_date": "2025-01-01", "amount": 100}])  # no 'kind'
+    with pytest.raises(ValueError, match="required column"):
+        score_business(bad, None, 0.0)
+
+
+def test_breakdown_orders_hurts_before_helps_and_excludes_last():
+    """The 'why this score' panel must surface drags first and excluded factors
+    last — never bury a hurting factor beneath the ones that helped."""
+    result = _score_of("declining")  # a borderline business with a real drag
+    dirs = [f.direction for f in result.factors if f.weight > 0]
+    # No 'helped' factor may appear before a 'hurt' factor.
+    if "hurt" in dirs and "helped" in dirs:
+        assert dirs.index("hurt") < dirs.index("helped")
+    # Excluded (weight 0) factors are always at the end.
+    weights = [f.weight for f in result.factors]
+    zeros = [i for i, w in enumerate(weights) if w == 0]
+    assert all(i >= len(weights) - len(zeros) for i in zeros)

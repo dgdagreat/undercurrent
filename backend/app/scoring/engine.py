@@ -104,13 +104,37 @@ def _direction(sub_score: float) -> str:
     return "neutral"
 
 
+#: Columns the scoring engine requires on the transactions frame.
+REQUIRED_TX_COLUMNS = ("txn_date", "amount", "kind")
+
+
+class InsufficientDataError(ValueError):
+    """Raised when there isn't enough ledger history to produce a score.
+
+    A business with no transactions isn't *risky* (a score of 0 / Decline would
+    be misleading) — it's simply unscoreable. Callers should surface this as
+    "insufficient data" (e.g. an HTTP 422), not as a low score or a 500.
+    """
+
+
 def score_business(
     transactions: pd.DataFrame,
     invoices: pd.DataFrame | None,
     opening_balance: float,
     as_of: pd.Timestamp | None = None,
 ) -> ScoreResult:
-    """Compute the full explained score for one business."""
+    """Compute the full explained score for one business.
+
+    Raises:
+        InsufficientDataError: if `transactions` is empty.
+        ValueError: if `transactions` is missing a required column.
+    """
+    if transactions is None or transactions.empty:
+        raise InsufficientDataError("no transactions to score")
+    missing = [c for c in REQUIRED_TX_COLUMNS if c not in transactions.columns]
+    if missing:
+        raise ValueError(f"transactions missing required column(s): {missing}")
+
     tx = transactions.copy()
     tx["txn_date"] = pd.to_datetime(tx["txn_date"])
     if as_of is None:
@@ -138,6 +162,11 @@ def score_business(
     # Renormalize weights across the factors that actually apply.
     applicable = [r for r in results if r.applicable]
     total_weight = sum(config.WEIGHTS[r.name] for r in applicable)
+    # Defensive: five of the six factors are always applicable, so this can't
+    # happen today — but guard anyway so a future refactor that makes every
+    # factor conditional fails loudly instead of dividing by zero.
+    if total_weight == 0:
+        raise InsufficientDataError("no applicable scoring factors")
 
     scored: list[ScoredFactor] = []
     overall = 0.0
@@ -164,8 +193,15 @@ def score_business(
     overall = round(overall, 1)
     grade, tier, rec = _grade_for(overall)
 
-    # Order factors by absolute impact so the UI leads with what moved the needle.
-    scored.sort(key=lambda f: f.weight, reverse=True)
+    # Order the breakdown to lead with what the reviewer needs to see first:
+    # excluded (not-applicable) factors sink to the bottom; among the rest,
+    # score-dragging factors surface first (hurt, then neutral, then helped),
+    # and within each group the heavier-weighted factor comes first. Sorting by
+    # raw contribution would do the opposite — it would bury the factors that
+    # hurt the score, which are exactly the ones a "why this score" panel exists
+    # to explain.
+    _dir_rank = {"hurt": 0, "neutral": 1, "helped": 2}
+    scored.sort(key=lambda f: (f.weight == 0, _dir_rank[f.direction], -f.weight))
 
     return ScoreResult(
         overall_score=overall, grade=grade, risk_tier=tier, recommendation=rec,

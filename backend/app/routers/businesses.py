@@ -40,6 +40,10 @@ def _latest_run(db: Session, business_id: int) -> models.ScoreRun | None:
 
 def _cashflow_series(biz: models.Business) -> list[schemas.CashflowPoint]:
     """Monthly revenue / expenses / net / end-of-month balance for the chart."""
+    # A business with no ledger has no series to plot — bail out before any
+    # .dt / .min() access that would raise on an empty frame.
+    if not biz.transactions:
+        return []
     rows = [
         dict(txn_date=t.txn_date, amount=t.amount, kind=t.kind)
         for t in biz.transactions
