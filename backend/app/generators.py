@@ -467,9 +467,116 @@ def gen_collections() -> GeneratedBusiness:
     )
 
 
+# --------------------------------------------------------------------------- #
+# 11. Fading boutique (faster decline, thin buffer -> D / Elevated)            #
+# --------------------------------------------------------------------------- #
+def gen_fading() -> GeneratedBusiness:
+    rng = np.random.RandomState(122)
+    months = _month_starts(MONTHS, END_DATE)
+    holiday = {11: 1.25, 12: 1.30}
+    base = 58_000.0
+    txns: list[dict] = []
+    for ms in months:
+        base *= 0.985  # ~1.5%/mo decline — noticeably steeper than Harbor Street
+        mult = holiday.get(ms.month, 1.0) * (1 + rng.normal(0, 0.05))
+        revenue = base * mult
+        txns.append(_tx(_day(ms, 5), revenue * 0.5, "in", "Boutique sales", "revenue",
+                        "POS settlements"))
+        txns.append(_tx(_day(ms, 20), revenue * 0.5, "in", "Boutique sales", "revenue",
+                        "POS settlements"))
+        txns.append(_tx(_day(ms, 7), -revenue * 0.50, "out", "Inventory / COGS",
+                        "expense", "Wholesalers"))
+        txns.append(_tx(_day(ms, 1), -7_500, "out", "Store rent", "expense", "Landlord"))
+        txns.append(_tx(_day(ms, 1), -14_000, "out", "Payroll", "expense", "Staff"))
+        txns.append(_tx(_day(ms, 3), -2_800, "out", "Store loan", "loan_payment", "Bank"))
+    return GeneratedBusiness(
+        name="Willow & Vine Boutique",
+        industry="Apparel Retail",
+        profile_type="fading",
+        founded_date=date(2017, 5, 1),
+        description="Apparel boutique whose sales are eroding faster than its "
+                    "neighbors' — enough to warrant a hard look, though it's still "
+                    "meeting its bills for now.",
+        opening_balance=17_000,
+        transactions=txns,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 12. Thin-margin courier (DSCR barely above 1, no cushion -> D / Elevated)    #
+# --------------------------------------------------------------------------- #
+def gen_thinmargin() -> GeneratedBusiness:
+    rng = np.random.RandomState(133)
+    months = _month_starts(MONTHS, END_DATE)
+    base = 70_000.0
+    txns: list[dict] = []
+    for ms in months:
+        revenue = base * (1 + rng.normal(0, 0.05))
+        txns.append(_tx(_day(ms, 4), revenue * 0.5, "in", "Delivery revenue", "revenue",
+                        "Clients"))
+        txns.append(_tx(_day(ms, 18), revenue * 0.5, "in", "Delivery revenue", "revenue",
+                        "Clients"))
+        txns.append(_tx(_day(ms, 7), -revenue * 0.60, "out", "Fuel & subcontractors",
+                        "expense", "Suppliers"))
+        txns.append(_tx(_day(ms, 1), -16_000, "out", "Payroll", "expense", "Drivers"))
+        txns.append(_tx(_day(ms, 5), -11_000, "out", "Vehicle loans", "loan_payment",
+                        "Lenders"))
+    return GeneratedBusiness(
+        name="QuickHop Courier",
+        industry="Last-mile Delivery",
+        profile_type="thinmargin",
+        founded_date=date(2020, 10, 1),
+        description="Steady last-mile courier that's stable and growing modestly, but "
+                    "runs on razor-thin margins — debt payments leave almost no "
+                    "cushion, so any wobble would hurt.",
+        opening_balance=16_000,
+        transactions=txns,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 13. Under-cushioned seasonal (predictable, but didn't save for winter -> D)  #
+# --------------------------------------------------------------------------- #
+def gen_undercushioned() -> GeneratedBusiness:
+    rng = np.random.RandomState(144)
+    months = _month_starts(MONTHS, END_DATE)
+    seasonal = {1: 0.15, 2: 0.15, 3: 0.50, 4: 1.00, 5: 1.40, 6: 1.60,
+                7: 1.50, 8: 1.40, 9: 1.10, 10: 0.70, 11: 0.35, 12: 0.20}
+    base = 48_000.0
+    txns: list[dict] = []
+    for ms in months:
+        mult = seasonal[ms.month] * (1 + rng.normal(0, 0.05))
+        revenue = base * mult
+        for frac, day in ((0.5, 10), (0.5, 22)):
+            txns.append(_tx(_day(ms, day), revenue * frac, "in", "Job revenue",
+                            "revenue", "Residential clients"))
+        # Heavy fixed overhead runs all winter with little revenue behind it, and
+        # eats enough of the summer surplus that the business can't build a proper
+        # off-season reserve.
+        txns.append(_tx(_day(ms, 1), -20_000, "out", "Lease & insurance", "expense",
+                        "Fixed overhead"))
+        txns.append(_tx(_day(ms, 15), -revenue * 0.40, "out", "Seasonal labor",
+                        "expense", "Crew"))
+        txns.append(_tx(_day(ms, 20), -revenue * 0.07, "out", "Fuel & materials",
+                        "expense", "Suppliers"))
+    return GeneratedBusiness(
+        name="Lakeside Pools & Patio",
+        industry="Seasonal Services",
+        profile_type="undercushioned",
+        founded_date=date(2019, 4, 1),
+        description="A predictable, healthy summer season — but the business doesn't "
+                    "bank enough to comfortably cover winter, so it runs dangerously "
+                    "thin at the trough. Seasonality isn't the problem here; the cash "
+                    "cushion is.",
+        opening_balance=16_000,
+        transactions=txns,
+    )
+
+
 def all_businesses() -> list[GeneratedBusiness]:
     return [
         gen_saas(), gen_seasonal(), gen_invoice(), gen_declining(),
         gen_fireworks(), gen_halloween(),
         gen_restaurant(), gen_overleveraged(), gen_erratic(), gen_collections(),
+        gen_fading(), gen_thinmargin(), gen_undercushioned(),
     ]

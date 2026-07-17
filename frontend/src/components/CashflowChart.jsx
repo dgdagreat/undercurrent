@@ -16,7 +16,11 @@ const BALANCE = "#0d9488";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
-  const p = Object.fromEntries(payload.map((x) => [x.dataKey, x.value]));
+  // Use the full underlying data row (payload[0].payload), not the per-series
+  // payload — the latter only carries the *rendered* series (revenue, expenses,
+  // end_balance), so `net` (a computed field we don't draw) would be undefined
+  // and render as "$NaN".
+  const p = payload[0].payload;
   return (
     <div
       style={{

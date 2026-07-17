@@ -104,10 +104,11 @@ The weighted total maps to a letter grade, a risk tier, and an
 Every factor returns not just a number but a **plain-English explanation** of
 why it landed where it did — that breakdown is the centerpiece of the dashboard.
 
-### The ten sample businesses
+### The thirteen sample businesses
 
-The set spans the full range — five Approve, one Review, four Decline — so the
-score visibly discriminates rather than rubber-stamping everyone.
+The set spans the full A–E range — five Approve, four Review (one C, three D),
+four Decline — so the score visibly discriminates rather than rubber-stamping
+everyone.
 
 **Approved — healthy, including the "hard" seasonal cases a naive model breaks on**
 
@@ -124,6 +125,9 @@ score visibly discriminates rather than rubber-stamping everyone.
 | Business | Profile | Result | Why it's interesting |
 | --- | --- | --- | --- |
 | Harbor Street Goods | Declining retailer | **C · Review** | Looks fine month-to-month, but the deseasonalized trend reveals slow erosion behind a strong holiday quarter — a second look, not a rejection |
+| Willow & Vine Boutique | Faster-declining boutique | **D · Review** | The same story as Harbor but sharper: quicker erosion and a thinner cash buffer push it into the elevated-risk band |
+| QuickHop Courier | Thin-margin courier | **D · Review** | Stable and even growing, but razor-thin margins and heavy debt leave almost no cushion — one bad month would bite |
+| Lakeside Pools & Patio | Under-cushioned seasonal | **D · Review** | Predictable, healthy season — but it doesn't bank enough to cover winter and runs perilously thin at the trough. Proof that runway is judged independently of the seasonality question: the pattern is fine, the cushion isn't |
 
 **Declined — genuinely distressed, each failing a different way**
 
