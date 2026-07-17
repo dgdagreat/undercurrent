@@ -95,7 +95,7 @@ The weighted total maps to a letter grade, a risk tier, and an
 Every factor returns not just a number but a **plain-English explanation** of
 why it landed where it did — that breakdown is the centerpiece of the dashboard.
 
-### The four sample businesses
+### The six sample businesses
 
 | Business | Profile | Result | Why it's interesting |
 | --- | --- | --- | --- |
@@ -103,6 +103,8 @@ why it landed where it did — that breakdown is the centerpiece of the dashboar
 | Evergreen Grounds Co. | Seasonal landscaping | **A · Approve** | Huge but predictable swings; a naive model would over-penalize it. It scores *as high as the SaaS business* |
 | Meridian Creative | Invoice-driven agency | **B · Approve** | Lumpy, delayed collections that look volatile but are reliable |
 | Harbor Street Goods | Declining retailer | **C · Review** | Looks fine month-to-month, but the deseasonalized trend reveals slow erosion behind a strong holiday quarter — flagged for a second look, not declined |
+| Big Bang Fireworks | Twin-peak seasonal retail | **A · Approve** | Revenue crammed into two short windows (July 4th + New Year's Eve). A multi-modal season the decomposition still handles cleanly |
+| Fright Night Pop-Up | Single-month seasonal retail | **A · Approve** | The most extreme profile — ~60% of the year's revenue lands in October — yet it scores an A, because it banks the season's cash to cover eleven quiet months |
 
 ---
 

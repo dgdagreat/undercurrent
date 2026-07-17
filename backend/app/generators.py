@@ -231,5 +231,91 @@ def gen_declining() -> GeneratedBusiness:
     )
 
 
+# --------------------------------------------------------------------------- #
+# 5. Fireworks retailer (extreme twin-peak seasonality)                       #
+# --------------------------------------------------------------------------- #
+def gen_fireworks() -> GeneratedBusiness:
+    rng = np.random.RandomState(55)
+    months = _month_starts(MONTHS, END_DATE)
+    # Twin peaks: a dominant Independence Day window (Jun/Jul) and a smaller
+    # New Year's Eve bump (Dec). Almost nothing the rest of the year. This is a
+    # multi-modal season — a good test that the decomposition handles more than
+    # one spike per year.
+    seasonal = {1: 0.05, 2: 0.04, 3: 0.05, 4: 0.06, 5: 0.12, 6: 0.90,
+                7: 1.80, 8: 0.15, 9: 0.08, 10: 0.08, 11: 0.12, 12: 0.55}
+    base = 52_000.0
+    txns: list[dict] = []
+    for ms in months:
+        mult = seasonal[ms.month] * (1 + rng.normal(0, 0.05))
+        revenue = max(0.0, base * mult)
+        for frac, day in ((0.45, 6), (0.35, 15), (0.20, 24)):
+            txns.append(_tx(_day(ms, day), revenue * frac, "in", "Fireworks sales",
+                            "revenue", "Retail & event clients"))
+        # Fixed year-round: bonded storage, permits/compliance, insurance.
+        txns.append(_tx(_day(ms, 1), -5_000, "out", "Storage, permits & insurance",
+                        "expense", "Facilities & compliance"))
+        # Variable inventory + seasonal stand staff scale with the sales spike.
+        txns.append(_tx(_day(ms, 12), -revenue * 0.45, "out", "Inventory",
+                        "expense", "Wholesale distributors"))
+        txns.append(_tx(_day(ms, 18), -revenue * 0.10, "out", "Seasonal stand staff",
+                        "expense", "Crew payroll"))
+        txns.append(_tx(_day(ms, 5), -1_800, "out", "Equipment loan",
+                        "loan_payment", "Equipment finance"))
+    return GeneratedBusiness(
+        name="Big Bang Fireworks",
+        industry="Seasonal Retail",
+        profile_type="fireworks",
+        founded_date=date(2017, 5, 1),
+        description="Fireworks retailer with revenue crammed into two short windows "
+                    "— Independence Day and New Year's Eve — and near-zero sales "
+                    "across the rest of the year.",
+        opening_balance=78_000,
+        transactions=txns,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# 6. Halloween pop-up (single-month extreme seasonality)                      #
+# --------------------------------------------------------------------------- #
+def gen_halloween() -> GeneratedBusiness:
+    rng = np.random.RandomState(66)
+    months = _month_starts(MONTHS, END_DATE)
+    # The most extreme profile in the set: one dominant month (October) after a
+    # short Aug/Sep ramp, then eleven quiet months carrying fixed costs. If the
+    # model treats *this* fairly, the seasonality argument really holds.
+    seasonal = {1: 0.02, 2: 0.02, 3: 0.03, 4: 0.03, 5: 0.04, 6: 0.05,
+                7: 0.10, 8: 0.35, 9: 1.10, 10: 2.60, 11: 0.25, 12: 0.05}
+    base = 40_000.0
+    txns: list[dict] = []
+    for ms in months:
+        mult = seasonal[ms.month] * (1 + rng.normal(0, 0.05))
+        revenue = max(0.0, base * mult)
+        for frac, day in ((0.5, 10), (0.5, 22)):
+            txns.append(_tx(_day(ms, day), revenue * frac, "in", "Costume & decor sales",
+                            "revenue", "In-store & online shoppers"))
+        # Fixed year-round: warehouse lease + insurance (kept lean off-season).
+        txns.append(_tx(_day(ms, 1), -4_200, "out", "Warehouse & insurance",
+                        "expense", "Storage & insurance"))
+        # Variable inventory + seasonal store staff scale with the October spike.
+        txns.append(_tx(_day(ms, 8), -revenue * 0.42, "out", "Inventory",
+                        "expense", "Costume suppliers"))
+        txns.append(_tx(_day(ms, 20), -revenue * 0.16, "out", "Seasonal store staff",
+                        "expense", "Store crew"))
+    return GeneratedBusiness(
+        name="Fright Night Pop-Up",
+        industry="Seasonal Retail",
+        profile_type="halloween",
+        founded_date=date(2019, 8, 1),
+        description="Halloween pop-up that earns the vast majority of its revenue in "
+                    "October, then carries fixed costs through eleven quiet months "
+                    "on the cash it banked during the season.",
+        opening_balance=70_000,
+        transactions=txns,
+    )
+
+
 def all_businesses() -> list[GeneratedBusiness]:
-    return [gen_saas(), gen_seasonal(), gen_invoice(), gen_declining()]
+    return [
+        gen_saas(), gen_seasonal(), gen_invoice(), gen_declining(),
+        gen_fireworks(), gen_halloween(),
+    ]
