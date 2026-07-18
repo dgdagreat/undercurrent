@@ -110,39 +110,45 @@ the base letter.
 Every factor returns not just a number but a **plain-English explanation** of
 why it landed where it did — that breakdown is the centerpiece of the dashboard.
 
-### The thirteen sample businesses
+### The thirty sample businesses
 
-The set spans the full A–F range — five Approve, four Review (one C, three D),
-four Decline — so the score visibly discriminates rather than rubber-stamping
-everyone.
+Thirty fictional businesses, **eighteen of them seasonal**, spanning the full
+A+ → F range. The point of loading the set with seasonal businesses is to make
+one thing unmistakable: **seasonality is never the risk signal — management is.**
+Seasonal businesses show up at *every* grade, sitting right next to their
+non-seasonal peers.
 
-**Approved — healthy, including the "hard" seasonal cases a naive model breaks on**
+Grade distribution (13 hand-written profiles + 17 generated from
+[`generators.py`](backend/app/generators.py) specs):
 
-| Business | Profile | Result | Why it's interesting |
+| Grade band | Verdict | Count | Examples |
 | --- | --- | --- | --- |
-| Northwind Analytics | Steady SaaS | **A · Approve** | The easy case — smooth recurring revenue |
-| Big Bang Fireworks | Twin-peak seasonal retail | **A · Approve** | Revenue crammed into two short windows (July 4th + New Year's Eve). A multi-modal season the decomposition still handles cleanly |
-| Evergreen Grounds Co. | Seasonal landscaping | **A · Approve** | Huge but predictable swings; a naive model would over-penalize it. It scores *as high as the SaaS business* |
-| Fright Night Pop-Up | Single-month seasonal retail | **A · Approve** | The most extreme profile — ~60% of the year's revenue lands in October — yet it scores an A, because it banks the season's cash to cover eleven quiet months |
-| Meridian Creative | Invoice-driven agency | **B · Approve** | Lumpy, delayed collections that look volatile but are reliable — a full book smooths out and the receivables are clean |
+| A+ / A / A- | Approve | 15 | Northwind (SaaS), **Wonder Junction Amusement Park**, Summit Peak Ski Resort, Ledger & Quill Tax, Evergreen Landscaping, Roast Republic Coffee |
+| B+ / B / B- | Approve | 4 | Tannenbaum Tree Farm, Frostbite Ski & Board, Meridian Agency |
+| C+ / C- | Review | 2 | Camp Wildwood (concentrated season), Harbor Street (slow decline) |
+| D+ | Review | 4 | Alpine Snow & Plow, Lakeside Pools, QuickHop Courier, Willow & Vine |
+| F | Decline | 5 | Riptide Water Park, Overland Freight, Cliffside Bistro, Stalled Studio, Pivot Labs |
 
-**Flagged for review — healthy on the surface, risk underneath**
+**Seasonal spotlight** — the same "peak-then-trough" shape lands at four
+different grades depending only on how the business is run:
 
-| Business | Profile | Result | Why it's interesting |
-| --- | --- | --- | --- |
-| Harbor Street Goods | Declining retailer | **C · Review** | Looks fine month-to-month, but the deseasonalized trend reveals slow erosion behind a strong holiday quarter — a second look, not a rejection |
-| Willow & Vine Boutique | Faster-declining boutique | **D · Review** | The same story as Harbor but sharper: quicker erosion and a thinner cash buffer push it into the elevated-risk band |
-| QuickHop Courier | Thin-margin courier | **D · Review** | Stable and even growing, but razor-thin margins and heavy debt leave almost no cushion — one bad month would bite |
-| Lakeside Pools & Patio | Under-cushioned seasonal | **D · Review** | Predictable, healthy season — but it doesn't bank enough to cover winter and runs perilously thin at the trough. Proof that runway is judged independently of the seasonality question: the pattern is fine, the cushion isn't |
+| Seasonal business | Grade | What made the difference |
+| --- | --- | --- |
+| Wonder Junction Amusement Park | **A-** | Big summer/holiday season, healthy margins, well-cushioned for the off-season |
+| Summit Peak Ski Resort | **B / A** | A *winter*-peaking season — the mirror image of most — scored just as fairly |
+| Camp Wildwood | **C+** | Revenue jammed into three months with only a thin off-season cushion |
+| Alpine Snow & Plow | **D+** | Its season depends on the *weather*, so year-over-year it's genuinely less predictable — the stability factor catches that |
+| Lakeside Pools & Patio | **D+** | Predictable season, but doesn't bank enough to cover winter — runs thin at the trough |
+| Riptide Water Park | **F** | A declining, over-leveraged, thinly-cushioned seasonal business — genuinely in trouble |
 
-**Declined — genuinely distressed, each failing a different way**
+Contrast that with the businesses the model *declines*: none are declined for
+being seasonal. They fail on a declining trend, a thin trough, debt they can't
+cover, uncollectable receivables, or genuinely pattern-less revenue (Pivot Labs,
+whose volatility is *unpredictable* — the mirror image of a Halloween pop-up's
+*predictable* extremes).
 
-| Business | Profile | Result | Why it's interesting |
-| --- | --- | --- | --- |
-| Overland Freight Co. | Overleveraged trucking | **E · Decline** | Profitable on operations, but a debt-financed fleet leaves cash flow unable to cover the loan payments (DSCR < 1) |
-| Cliffside Bistro | Failing restaurant | **E · Decline** | Falling covers against rigid rent and payroll, plus a loan it can no longer cover — burning into overdraft |
-| Stalled Studio | Collections failure | **E · Decline** | Does the work but can't get paid: long payment lags and a growing pile of overdue invoices starve it of cash |
-| Pivot Labs | Erratic startup | **E · Decline** | Genuinely pattern-less revenue against a fixed burn. The key contrast: this is *unpredictable* volatility the model rightly punishes — unlike the Halloween pop-up's *predictable* extremes |
+Every business ships with the full factor-by-factor "why this score" breakdown;
+switch between them in the dashboard to see how the model treats each fairly.
 
 ---
 
@@ -151,7 +157,7 @@ everyone.
 ```
 backend/                     FastAPI + pandas over SQLite
   app/
-    generators.py            Seeded mock-data generators (the 4 profiles)
+    generators.py            Seeded mock-data generators (30 businesses)
     seed.py                  Rebuilds the DB and caches a score per business
     models.py                SQLAlchemy models (ledger-as-source-of-truth)
     scoring/                 Pure, framework-free scoring package

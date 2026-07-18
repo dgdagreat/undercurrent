@@ -573,10 +573,204 @@ def gen_undercushioned() -> GeneratedBusiness:
     )
 
 
+# --------------------------------------------------------------------------- #
+# Parameterized builders                                                       #
+#                                                                              #
+# The businesses above are hand-written so each reads clearly on its own. To    #
+# widen the sample set without pages of near-duplicate code, the two builders   #
+# below take a spec (seasonal shape, cost structure, cushion) and emit a        #
+# ledger. They share the exact same transaction model as the hand-written      #
+# generators, so nothing about the scoring changes — this is just less boiler-  #
+# plate. Variable costs scale with revenue; fixed overhead and any loan run     #
+# every month regardless.                                                       #
+# --------------------------------------------------------------------------- #
+def _make_seasonal(*, seed, name, industry, profile_type, founded, description,
+                   seasonal, base, fixed, var_frac, opening, loan=0.0,
+                   noise=0.05, trend=1.0) -> GeneratedBusiness:
+    rng = np.random.RandomState(seed)
+    months = _month_starts(MONTHS, END_DATE)
+    txns: list[dict] = []
+    b = base
+    for ms in months:
+        b *= trend
+        mult = seasonal[ms.month] * (1 + rng.normal(0, noise))
+        revenue = max(0.0, b * mult)
+        txns.append(_tx(_day(ms, 10), revenue * 0.5, "in", "Sales", "revenue",
+                        "Customers"))
+        txns.append(_tx(_day(ms, 22), revenue * 0.5, "in", "Sales", "revenue",
+                        "Customers"))
+        txns.append(_tx(_day(ms, 1), -fixed, "out", "Fixed overhead", "expense",
+                        "Lease, insurance & upkeep"))
+        txns.append(_tx(_day(ms, 15), -revenue * var_frac, "out", "Staff & supplies",
+                        "expense", "Seasonal staff & suppliers"))
+        if loan:
+            txns.append(_tx(_day(ms, 5), -loan, "out", "Loan payment",
+                            "loan_payment", "Lender"))
+    return GeneratedBusiness(
+        name=name, industry=industry, profile_type=profile_type,
+        founded_date=founded, description=description,
+        opening_balance=opening, transactions=txns,
+    )
+
+
+def _make_steady(*, seed, name, industry, profile_type, founded, description,
+                 base, fixed, var_frac, opening, loan=0.0, growth=1.0,
+                 noise=0.03, jan_bump=1.0) -> GeneratedBusiness:
+    rng = np.random.RandomState(seed)
+    months = _month_starts(MONTHS, END_DATE)
+    txns: list[dict] = []
+    b = base
+    for ms in months:
+        b *= growth
+        mult = (jan_bump if ms.month == 1 else 1.0) * (1 + rng.normal(0, noise))
+        revenue = max(0.0, b * mult)
+        txns.append(_tx(_day(ms, 6), revenue * 0.5, "in", "Revenue", "revenue",
+                        "Customers"))
+        txns.append(_tx(_day(ms, 20), revenue * 0.5, "in", "Revenue", "revenue",
+                        "Customers"))
+        txns.append(_tx(_day(ms, 1), -fixed, "out", "Fixed overhead", "expense",
+                        "Rent, payroll & admin"))
+        txns.append(_tx(_day(ms, 15), -revenue * var_frac, "out", "Cost of service",
+                        "expense", "Suppliers"))
+        if loan:
+            txns.append(_tx(_day(ms, 5), -loan, "out", "Loan payment",
+                            "loan_payment", "Lender"))
+    return GeneratedBusiness(
+        name=name, industry=industry, profile_type=profile_type,
+        founded_date=founded, description=description,
+        opening_balance=opening, transactions=txns,
+    )
+
+
+# Seasonal shapes (Jan..Dec monthly multipliers) reused by the specs below.
+_SUMMER = {1: .15, 2: .15, 3: .40, 4: .80, 5: 1.10, 6: 1.60,
+           7: 1.90, 8: 1.70, 9: 1.00, 10: .70, 11: .40, 12: .50}
+_WINTER = {1: 1.50, 2: 1.50, 3: 1.30, 4: .50, 5: .15, 6: .10,
+           7: .10, 8: .10, 9: .15, 10: .40, 11: .90, 12: 1.50}
+_TAX = {1: 1.20, 2: 1.80, 3: 2.20, 4: 2.00, 5: .40, 6: .30,
+        7: .25, 8: .25, 9: .30, 10: .35, 11: .40, 12: .50}
+_XMAS = {1: .05, 2: .03, 3: .03, 4: .05, 5: .05, 6: .05,
+         7: .05, 8: .05, 9: .10, 10: .30, 11: 1.80, 12: 2.60}
+_ICECREAM = {1: .15, 2: .15, 3: .30, 4: .60, 5: 1.10, 6: 1.70,
+             7: 1.90, 8: 1.70, 9: 1.00, 10: .50, 11: .25, 12: .20}
+_WEDDING = {1: .20, 2: .30, 3: .50, 4: .80, 5: 1.40, 6: 1.60,
+            7: 1.30, 8: 1.30, 9: 1.60, 10: 1.40, 11: .60, 12: .40}
+_PUMPKIN = {1: .05, 2: .05, 3: .05, 4: .10, 5: .15, 6: .20,
+            7: .30, 8: .60, 9: 1.60, 10: 2.50, 11: .50, 12: .20}
+_GARDEN = {1: .15, 2: .25, 3: .80, 4: 1.60, 5: 1.90, 6: 1.30,
+           7: .90, 8: .70, 9: .80, 10: .60, 11: .30, 12: .20}
+_CAMP = {1: .05, 2: .05, 3: .10, 4: .20, 5: .50, 6: 1.90,
+         7: 2.40, 8: 1.60, 9: .30, 10: .15, 11: .10, 12: .10}
+_FLORIST = {1: .70, 2: 1.80, 3: .90, 4: .90, 5: 1.70, 6: 1.00,
+            7: .70, 8: .70, 9: .80, 10: .90, 11: .90, 12: 1.30}
+_THEMEPARK = {1: .15, 2: .15, 3: .40, 4: .80, 5: 1.10, 6: 1.60,
+              7: 1.90, 8: 1.70, 9: 1.00, 10: .70, 11: .40, 12: .60}
+
+
+# 14 more seasonal businesses via the builder (mix of grades on purpose).
+_SEASONAL_SPECS = [
+    dict(seed=201, name="Wonder Junction Amusement Park", industry="Amusement Park",
+         profile_type="theme_park", founded=date(2005, 5, 1), seasonal=_THEMEPARK,
+         base=95_000, fixed=30_000, var_frac=0.50, loan=8_000, opening=185_000,
+         description="Regional theme park packed all summer and over the holidays, "
+                     "carrying heavy ride-maintenance overhead through the off-season."),
+    dict(seed=202, name="Summit Peak Resort", industry="Ski Resort",
+         profile_type="ski", founded=date(2001, 11, 1), seasonal=_WINTER,
+         base=110_000, fixed=28_000, var_frac=0.50, loan=6_000, opening=165_000,
+         description="Winter ski resort — its season is the mirror image of most "
+                     "seasonal businesses, peaking December through March."),
+    dict(seed=203, name="Ledger & Quill Tax", industry="Tax Preparation",
+         profile_type="tax", founded=date(2012, 1, 1), seasonal=_TAX,
+         base=72_000, fixed=12_000, var_frac=0.35, opening=95_000,
+         description="Tax-prep firm that earns most of its year between January and "
+                     "April, then runs lean through the off-season."),
+    dict(seed=204, name="Tannenbaum Tree Farm", industry="Seasonal Retail",
+         profile_type="xmas_trees", founded=date(2008, 11, 1), seasonal=_XMAS,
+         base=58_000, fixed=8_000, var_frac=0.45, opening=48_000,
+         description="Christmas-tree farm with essentially all of its revenue in "
+                     "November and December."),
+    dict(seed=205, name="Sundae Social Creamery", industry="Ice Cream Shop",
+         profile_type="ice_cream", founded=date(2016, 5, 1), seasonal=_ICECREAM,
+         base=42_000, fixed=9_500, var_frac=0.50, opening=42_000,
+         description="Neighborhood ice-cream shop that lives for summer and coasts "
+                     "on thin margins the rest of the year."),
+    dict(seed=206, name="Everlong Wedding Barn", industry="Event Venue",
+         profile_type="wedding", founded=date(2014, 4, 1), seasonal=_WEDDING,
+         base=60_000, fixed=16_000, var_frac=0.45, loan=4_000, opening=140_000,
+         description="Rustic wedding venue booked solid from late spring through "
+                     "fall, quiet in winter."),
+    dict(seed=207, name="Harvest Moon Pumpkin Patch", industry="Agritourism",
+         profile_type="pumpkin", founded=date(2010, 9, 1), seasonal=_PUMPKIN,
+         base=62_000, fixed=7_500, var_frac=0.45, opening=55_000,
+         description="Pumpkin patch and fall agritourism operation that makes its "
+                     "year in September and October."),
+    dict(seed=208, name="Alpine Snow & Plow", industry="Snow Removal",
+         profile_type="snow", founded=date(2011, 10, 1), seasonal=_WINTER,
+         base=52_000, fixed=11_000, var_frac=0.50, loan=5_000, opening=60_000,
+         noise=0.35,
+         description="Snow-removal contractor whose winter revenue swings hard with "
+                     "the weather — a genuinely less predictable season than most."),
+    dict(seed=209, name="Bloom & Sprout Garden Center", industry="Garden Center",
+         profile_type="garden", founded=date(2009, 3, 1), seasonal=_GARDEN,
+         base=64_000, fixed=14_000, var_frac=0.50, loan=3_000, opening=100_000,
+         description="Garden center with a big spring rush that tapers through the "
+                     "summer and goes quiet by winter."),
+    dict(seed=210, name="Camp Wildwood", industry="Summer Camp",
+         profile_type="camp", founded=date(2006, 6, 1), seasonal=_CAMP,
+         base=56_000, fixed=15_000, var_frac=0.42, loan=4_000, opening=46_000,
+         description="Overnight summer camp: nearly all of its revenue lands in "
+                     "June through August, and its off-season cushion is thin."),
+    dict(seed=211, name="Petals & Stems Florist", industry="Florist",
+         profile_type="florist", founded=date(2013, 2, 1), seasonal=_FLORIST,
+         base=40_000, fixed=10_000, var_frac=0.50, opening=55_000,
+         description="Florist with recurring spikes around Valentine's Day, Mother's "
+                     "Day and the December holidays."),
+    dict(seed=212, name="Riptide Water Park", industry="Water Park",
+         profile_type="water_park", founded=date(2007, 5, 1), seasonal=_SUMMER,
+         base=72_000, fixed=22_000, var_frac=0.50, loan=12_000, opening=30_000,
+         trend=0.986,
+         description="Aging water park with a solid summer draw but declining "
+                     "attendance, heavy debt and a thin cushion — a seasonal "
+                     "business that's genuinely in trouble."),
+    dict(seed=213, name="Frostbite Ski & Board", industry="Ski Retail",
+         profile_type="ski_retail", founded=date(2015, 10, 1), seasonal=_WINTER,
+         base=58_000, fixed=13_000, var_frac=0.52, loan=3_000, opening=85_000,
+         description="Ski and snowboard shop that sells gear all winter and rents "
+                     "through the season, dormant in summer."),
+    dict(seed=214, name="Bayside Marina", industry="Marina & Boating",
+         profile_type="marina", founded=date(2003, 5, 1), seasonal=_SUMMER,
+         base=68_000, fixed=20_000, var_frac=0.42, loan=6_000, opening=150_000,
+         description="Boat slips, rentals and service — busy all summer, minimal "
+                     "activity once the water turns cold."),
+]
+
+# 3 more steady (non-seasonal) businesses for contrast.
+_STEADY_SPECS = [
+    dict(seed=301, name="Ironworks Gym", industry="Fitness",
+         profile_type="gym", founded=date(2015, 1, 1), base=66_000, fixed=22_000,
+         var_frac=0.32, loan=5_000, opening=95_000, jan_bump=1.30,
+         description="Membership gym with steady dues and the usual New-Year "
+                     "sign-up bump."),
+    dict(seed=302, name="Bright Smile Dental", industry="Dental Practice",
+         profile_type="dental", founded=date(2010, 6, 1), base=98_000, fixed=32_000,
+         var_frac=0.34, loan=6_000, opening=165_000, growth=1.003,
+         description="Established dental practice with steady, mildly growing "
+                     "recurring revenue."),
+    dict(seed=303, name="Roast Republic Coffee", industry="Coffee Subscription",
+         profile_type="coffee", founded=date(2018, 3, 1), base=54_000, fixed=16_000,
+         var_frac=0.40, opening=115_000, growth=1.013,
+         description="Direct-to-consumer coffee subscription with smooth, steadily "
+                     "growing recurring orders."),
+]
+
+
 def all_businesses() -> list[GeneratedBusiness]:
-    return [
+    hand_written = [
         gen_saas(), gen_seasonal(), gen_invoice(), gen_declining(),
         gen_fireworks(), gen_halloween(),
         gen_restaurant(), gen_overleveraged(), gen_erratic(), gen_collections(),
         gen_fading(), gen_thinmargin(), gen_undercushioned(),
     ]
+    generated = ([_make_seasonal(**s) for s in _SEASONAL_SPECS]
+                 + [_make_steady(**s) for s in _STEADY_SPECS])
+    return hand_written + generated
