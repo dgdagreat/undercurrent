@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { fetchBusiness, fetchBusinesses } from "./api";
+import { deleteBusiness, fetchBusiness, fetchBusinesses } from "./api";
 import CashflowChart from "./components/CashflowChart";
 import FactorBreakdown from "./components/FactorBreakdown";
 import ScoreGauge from "./components/ScoreGauge";
+import UploadPanel from "./components/UploadPanel";
 import { gradeColor, REC_COLORS } from "./theme";
 
 export default function App() {
@@ -10,6 +11,17 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
+  const [showUpload, setShowUpload] = useState(false);
+
+  const refresh = (selectId) =>
+    fetchBusinesses()
+      .then((list) => {
+        setBusinesses(list);
+        if (selectId != null) setSelectedId(selectId);
+        else if (list.length && !list.some((b) => b.id === selectedId))
+          setSelectedId(list[0].id);
+      })
+      .catch((e) => setError(e.message));
 
   // Load the business list once, then default to the first.
   useEffect(() => {
@@ -51,7 +63,12 @@ export default function App() {
               >
                 <div>
                   <div className="biz-item__name">{b.name}</div>
-                  <div className="biz-item__industry">{b.industry}</div>
+                  <div className="biz-item__industry">
+                    {b.industry}
+                    {b.profile_type === "uploaded" && (
+                      <span className="uploaded-badge">uploaded</span>
+                    )}
+                  </div>
                 </div>
                 <div
                   className="biz-item__grade"
@@ -63,9 +80,16 @@ export default function App() {
             );
           })}
         </div>
+        <button
+          className="btn btn--upload"
+          onClick={() => setShowUpload(true)}
+        >
+          ⬆ Upload your business
+        </button>
+
         <div className="sidebar__foot">
-          Portfolio demo · scores computed from generated transaction data, not a
-          credit bureau. No real lending decisions.
+          Portfolio demo · scores computed from generated or uploaded transaction
+          data, not a credit bureau. No real lending decisions.
         </div>
       </aside>
 
@@ -73,16 +97,33 @@ export default function App() {
         {!detail ? (
           <div className="loading">Loading…</div>
         ) : (
-          <Dashboard detail={detail} />
+          <Dashboard
+            detail={detail}
+            onDelete={async () => {
+              await deleteBusiness(detail.id);
+              refresh(null);
+            }}
+          />
         )}
       </main>
+
+      {showUpload && (
+        <UploadPanel
+          onClose={() => setShowUpload(false)}
+          onDone={(biz) => {
+            setShowUpload(false);
+            refresh(biz.id);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function Dashboard({ detail }) {
+function Dashboard({ detail, onDelete }) {
   const { score } = detail;
   const rec = REC_COLORS[score.recommendation] || REC_COLORS.Review;
+  const uploaded = detail.profile_type === "uploaded";
 
   return (
     <>
@@ -93,6 +134,16 @@ function Dashboard({ detail }) {
             Founded {new Date(detail.founded_date).getFullYear()}
           </span>
           <span className="chip">Assessed {score.as_of}</span>
+          {uploaded && (
+            <button
+              className="chip chip--danger"
+              onClick={() => {
+                if (window.confirm(`Delete "${detail.name}"?`)) onDelete();
+              }}
+            >
+              Delete upload
+            </button>
+          )}
         </div>
         <h1>{detail.name}</h1>
         <p>{detail.description}</p>

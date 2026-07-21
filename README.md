@@ -152,6 +152,38 @@ switch between them in the dashboard to see how the model treats each fairly.
 
 ---
 
+## Upload your own business
+
+The dashboard's **Upload your business** button accepts a transactions CSV —
+the format every real bookkeeping surface can produce (QuickBooks/Xero exports,
+raw bank-statement downloads, Square exports, hand-kept spreadsheets). The file
+is parsed, validated, stored, and **scored on the spot** through the exact same
+pipeline as the samples, then lands on the same dashboard. In production this
+would be a Plaid or QuickBooks feed; the CSV upload exercises the identical
+scoring path.
+
+The parser (`backend/app/ingest.py`) is deliberately forgiving, because messy
+input is the whole point:
+
+- **Flexible headers** — "Date" / "Posting Date" / "txn_date" all work; same
+  for amount, description, and category.
+- **Only two required columns**: a date and a signed amount (positive = money
+  in). Currency formatting (`$1,234.56`, parenthesized negatives) is handled.
+- **`category` is optional.** With it, your labels drive classification.
+  Without it (a bare bank export), inflows are treated as revenue, outflows as
+  expenses, and a conservative keyword pass on descriptions ("loan", "SBA",
+  "debt service"…) catches loan payments so the debt-service factor still
+  works — the same kind of transaction classification real alternative-data
+  lenders run on bank feeds.
+- **Human errors, not stack traces** — "Row 17: could not parse date
+  '13/45/2025'" instead of a 500.
+
+There's a **Download a sample CSV** link in the upload dialog for instant demos.
+Uploaded businesses are badged in the sidebar and can be deleted; the 30
+samples are protected.
+
+---
+
 ## Architecture
 
 ```
@@ -159,14 +191,16 @@ backend/                     FastAPI + pandas over SQLite
   app/
     generators.py            Seeded mock-data generators (30 businesses)
     seed.py                  Rebuilds the DB and caches a score per business
+    ingest.py                Forgiving CSV parser for uploaded ledgers
+    services.py              Shared score-and-cache step (seed + uploads)
     models.py                SQLAlchemy models (ledger-as-source-of-truth)
     scoring/                 Pure, framework-free scoring package
       decompose.py           Additive trend/seasonal/residual decomposition
       factors.py             The six factor computations
       engine.py              Orchestration -> overall score + breakdown
       config.py              Weights + benchmark thresholds (all tunable)
-    routers/businesses.py    REST API
-  tests/test_scoring.py      Sanity + fairness tests
+    routers/                 REST API (businesses.py, uploads.py)
+  tests/                     Scoring fairness + CSV ingestion tests
 frontend/                    React (Vite) + Recharts dashboard
 ```
 
@@ -236,17 +270,22 @@ python -m pytest
 
 ## Known limitations & notes for contributors
 
-- **Scores are cached at seed time.** The API serves the score rows written by
-  `app.seed`. After changing anything in `scoring/`, re-run `python -m app.seed`
-  or the dashboard will show stale numbers. (A live `/api/businesses/{id}/score`
-  recompute endpoint would remove this footgun — a good next step.)
+- **Sample scores are cached at seed time.** Uploads are scored live at upload
+  time, but the 30 samples serve the score rows written by `app.seed`. After
+  changing anything in `scoring/`, re-run `python -m app.seed` or the samples
+  will show stale numbers. (A live re-score endpoint for samples would remove
+  this footgun — a good next step.)
 - **Invoice generator has a cold-start ramp.** `gen_invoice()` only issues
   invoices *inside* the 24-month window, so the first ~2 months collect fewer
   matured payments and revenue ramps up artificially. This nudges the agency's
   growth-trend factor upward. Warming up with a few months of pre-window
   invoices (recording only the payments that land in-window) would fix it.
-- **No frontend tests.** Only the scoring engine is covered by tests
-  (`backend/tests/`). The React layer is unverified beyond manual/CI build.
+- **Uploads don't support invoices.** The CSV path ingests transactions only,
+  so uploaded businesses always have the receivables factor excluded (weight
+  redistributed). A second optional invoices CSV would light that factor up.
+- **No frontend tests.** Only the scoring engine and CSV ingestion are covered
+  by tests (`backend/tests/`). The React layer is unverified beyond manual/CI
+  build.
 - **Single JS bundle (~550 KB).** Recharts dominates the bundle; fine for a
   demo, but code-splitting or a lighter chart lib would help a real deploy.
 - **Dev-only CORS.** `main.py` allows `localhost:5173` only; adjust

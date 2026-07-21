@@ -397,6 +397,215 @@ body {
   color: var(--text-muted);
 }
 
+/* ------------------------------------------------------------------ *
+ * Upload feature                                                      *
+ * ------------------------------------------------------------------ */
+.btn {
+  font: inherit;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.12s;
+}
+
+.btn:hover {
+  filter: brightness(1.06);
+}
+
+.btn--primary {
+  background: var(--indigo);
+  color: #fff;
+}
+
+.btn--primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--surface-2);
+  color: var(--slate);
+}
+
+.btn--upload {
+  background: var(--indigo);
+  color: #fff;
+  width: 100%;
+  font-size: 13.5px;
+  padding: 11px 12px;
+}
+
+.uploaded-badge {
+  display: inline-block;
+  margin-left: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a5b4fc;
+  border: 1px solid #4338ca;
+  border-radius: 5px;
+  padding: 1px 5px;
+  vertical-align: 1px;
+}
+
+.chip--danger {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  padding: 20px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+  width: min(560px, 100%);
+  padding: 26px 28px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal__head h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.modal__close {
+  border: none;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.modal__sub {
+  color: var(--slate);
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 10px 0 18px;
+}
+
+.linklike {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--indigo);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dropzone {
+  border: 2px dashed var(--surface-2);
+  border-radius: 12px;
+  padding: 26px 16px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--slate);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropzone span {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.dropzone--over {
+  border-color: var(--indigo);
+  background: var(--indigo-soft);
+}
+
+.dropzone--filled {
+  border-style: solid;
+  border-color: var(--emerald);
+  background: var(--emerald-soft);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--slate);
+}
+
+.form-grid label em {
+  font-weight: 400;
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+.form-grid label:first-child {
+  grid-column: 1 / -1;
+}
+
+.form-grid input {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--surface-2);
+  border-radius: 9px;
+  outline: none;
+}
+
+.form-grid input:focus {
+  border-color: var(--indigo);
+}
+
+.form-error {
+  margin-top: 14px;
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  line-height: 1.45;
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
 @media (max-width: 900px) {
   .app {
     grid-template-columns: 1fr;

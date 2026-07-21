@@ -9,27 +9,10 @@ can serve it instantly.
 
 from __future__ import annotations
 
-import pandas as pd
-
 from . import models
 from .database import Base, SessionLocal, engine
 from .generators import all_businesses
-from .scoring import score_business
-
-
-def _to_frames(biz: models.Business):
-    """Pull a business's ledger + invoices back out as DataFrames for scoring."""
-    tx = pd.DataFrame([
-        dict(txn_date=t.txn_date, amount=t.amount, kind=t.kind, direction=t.direction)
-        for t in biz.transactions
-    ])
-    inv_rows = [
-        dict(issued_date=i.issued_date, due_date=i.due_date,
-             paid_date=i.paid_date, amount=i.amount, status=i.status)
-        for i in biz.invoices
-    ]
-    inv = pd.DataFrame(inv_rows) if inv_rows else None
-    return tx, inv
+from .services import score_and_cache
 
 
 def seed() -> None:
@@ -54,22 +37,8 @@ def seed() -> None:
             db.flush()
             db.refresh(biz)
 
-            # Score it and cache the result.
-            tx, inv = _to_frames(biz)
-            result = score_business(tx, inv, gen.opening_balance)
-            run = models.ScoreRun(
-                business_id=biz.id, as_of_date=pd.Timestamp(result.as_of).date(),
-                overall_score=result.overall_score, grade=result.grade,
-                risk_tier=result.risk_tier, recommendation=result.recommendation,
-            )
-            db.add(run)
-            db.flush()
-            for f in result.factors:
-                db.add(models.ScoreFactor(
-                    score_run_id=run.id, factor_name=f.name, raw_value=f.raw_value,
-                    sub_score=f.sub_score, weight=f.weight, contribution=f.contribution,
-                    direction=f.direction, explanation=f.explanation,
-                ))
+            # Score it and cache the result (same path uploads use).
+            result = score_and_cache(db, biz)
             print(f"  {gen.name:24s} -> {result.overall_score:5.1f}  "
                   f"{result.grade}  {result.risk_tier:8s}  {result.recommendation}")
 

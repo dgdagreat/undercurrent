@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import businesses
+from .routers import businesses, uploads
 
 app = FastAPI(
     title="Pulse — Cash-Flow Underwriter",
@@ -26,6 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(businesses.router)
+app.include_router(uploads.router)
 
 
 @app.get("/api/health")
