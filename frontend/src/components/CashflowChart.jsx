@@ -75,14 +75,20 @@ export default function CashflowChart({ data }) {
             width={52}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9" }} />
-          <Bar dataKey="revenue" fill={REVENUE} radius={[3, 3, 0, 0]} barSize={9} />
-          <Bar dataKey="expenses" fill={EXPENSE} radius={[3, 3, 0, 0]} barSize={9} />
+          {/* Animation off: the chart should snap in instantly when you switch
+              businesses (the mount animation replayed a ~1.5s grow on every
+              selection and flashed an empty frame mid-transition). */}
+          <Bar dataKey="revenue" fill={REVENUE} radius={[3, 3, 0, 0]} barSize={9}
+            isAnimationActive={false} />
+          <Bar dataKey="expenses" fill={EXPENSE} radius={[3, 3, 0, 0]} barSize={9}
+            isAnimationActive={false} />
           <Line
             type="monotone"
             dataKey="end_balance"
             stroke={BALANCE}
             strokeWidth={2.5}
             dot={false}
+            isAnimationActive={false}
           />
         </ComposedChart>
       </ResponsiveContainer>
