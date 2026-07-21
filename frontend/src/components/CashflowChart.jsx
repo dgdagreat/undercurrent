@@ -1,6 +1,8 @@
+import { useState } from "react";
 import {
   Bar,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Line,
   ResponsiveContainer,
@@ -13,6 +15,9 @@ import { shortMonth, usd, usdCompact } from "../theme";
 const REVENUE = "#4f46e5";
 const EXPENSE = "#cbd5e1";
 const BALANCE = "#0d9488";
+// Colors the hovered month lights up in: revenue → green, expenses → red.
+const REVENUE_HOVER = "#059669";
+const EXPENSE_HOVER = "#dc2626";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -43,6 +48,10 @@ function CustomTooltip({ active, payload, label }) {
 
 // Monthly revenue vs expenses (bars) with the running cash balance (line).
 export default function CashflowChart({ data }) {
+  // Which month the cursor is over — the hovered month's revenue bar turns
+  // green and its expenses bar turns red, so the pair you're reading pops out.
+  const [activeIndex, setActiveIndex] = useState(null);
+
   return (
     <>
       <div className="legend">
@@ -57,7 +66,18 @@ export default function CashflowChart({ data }) {
         </span>
       </div>
       <ResponsiveContainer width="100%" height={280}>
-        <ComposedChart data={data} margin={{ top: 8, right: 8, left: 4, bottom: 4 }}>
+        <ComposedChart
+          data={data}
+          margin={{ top: 8, right: 8, left: 4, bottom: 4 }}
+          onMouseMove={(s) =>
+            setActiveIndex(
+              typeof s?.activeTooltipIndex === "number"
+                ? s.activeTooltipIndex
+                : null
+            )
+          }
+          onMouseLeave={() => setActiveIndex(null)}
+        >
           <CartesianGrid vertical={false} stroke="#eef2f6" />
           <XAxis
             dataKey="month"
@@ -77,11 +97,20 @@ export default function CashflowChart({ data }) {
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9" }} />
           {/* Animation off: the chart should snap in instantly when you switch
               businesses (the mount animation replayed a ~1.5s grow on every
-              selection and flashed an empty frame mid-transition). */}
-          <Bar dataKey="revenue" fill={REVENUE} radius={[3, 3, 0, 0]} barSize={9}
-            isAnimationActive={false} />
-          <Bar dataKey="expenses" fill={EXPENSE} radius={[3, 3, 0, 0]} barSize={9}
-            isAnimationActive={false} />
+              selection and flashed an empty frame mid-transition). Per-Cell
+              fills let the hovered month recolor without touching the rest. */}
+          <Bar dataKey="revenue" radius={[3, 3, 0, 0]} barSize={9}
+            isAnimationActive={false}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={i === activeIndex ? REVENUE_HOVER : REVENUE} />
+            ))}
+          </Bar>
+          <Bar dataKey="expenses" radius={[3, 3, 0, 0]} barSize={9}
+            isAnimationActive={false}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={i === activeIndex ? EXPENSE_HOVER : EXPENSE} />
+            ))}
+          </Bar>
           <Line
             type="monotone"
             dataKey="end_balance"
