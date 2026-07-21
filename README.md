@@ -207,6 +207,9 @@ natural first target; it should be env-gated so the demo still runs from a bare
 
 ## Architecture
 
+> For a full walkthrough — the data flow, the layering, and the design
+> decisions behind each — see **[ARCHITECTURE.md](ARCHITECTURE.md)**.
+
 ```
 backend/                     FastAPI + pandas over SQLite
   app/
