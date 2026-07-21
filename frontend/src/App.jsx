@@ -125,7 +125,7 @@ export default function App() {
           <span />
         </button>
         <button className="topbar__brand" onClick={() => goto("home")}>
-          Pulse <span>Cash-flow health scoring</span>
+          Undercurrent <span>Cash-flow health scoring</span>
         </button>
       </header>
 

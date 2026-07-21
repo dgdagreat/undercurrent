@@ -1,8 +1,8 @@
-# Pulse
+# Undercurrent
 
-_Read the pulse beneath the noise._
+_Underwriting the current beneath the noise._
 
-**Pulse** is an explainable small-business creditworthiness tool that scores a business from
+**Undercurrent** is an explainable small-business creditworthiness tool that scores a business from
 its **transaction-level cash flow** — the kind of alternative data a modern
 lender pulls from Plaid or an accounting integration — instead of a traditional
 credit-bureau score.

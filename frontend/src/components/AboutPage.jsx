@@ -20,7 +20,7 @@ const BANDS = [
 export default function AboutPage({ onUpload }) {
   return (
     <div className="about">
-      <h1>How Pulse scores a business</h1>
+      <h1>How Undercurrent scores a business</h1>
 
       <section className="card about__block">
         <h2>The problem</h2>
@@ -121,7 +121,8 @@ export default function AboutPage({ onUpload }) {
       </section>
 
       <p className="about__disclaimer">
-        Pulse is a portfolio demonstration. All sample businesses are fictional,
+        Undercurrent is a portfolio demonstration. All sample businesses are
+        fictional,
         scores are computed from generated or user-uploaded transaction data,
         and nothing here is a real credit decision or financial advice.
       </p>

@@ -42,7 +42,7 @@ export default function HomePage({ businesses, onSelect, onUpload }) {
         <p>
           Traditional models assume smooth recurring revenue, so they under-score
           landscapers, theme parks, and invoice-driven agencies whose money moves
-          in waves. Pulse scores the <b>whole cycle</b> — it strips out
+          in waves. Undercurrent scores the <b>whole cycle</b> — it strips out
           predictable seasonality before judging stability, measures cash at the
           seasonal trough, and explains every point of the score.
         </p>

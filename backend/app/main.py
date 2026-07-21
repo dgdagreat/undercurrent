@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routers import businesses, uploads
 
 app = FastAPI(
-    title="Pulse — Cash-Flow Underwriter",
+    title="Undercurrent — Cash-Flow Underwriter",
     description="Explainable, alternative-data creditworthiness scoring for "
                 "small businesses with seasonal or invoice-driven revenue.",
     version="1.0.0",
