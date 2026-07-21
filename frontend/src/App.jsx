@@ -8,6 +8,24 @@ import ScoreGauge from "./components/ScoreGauge";
 import UploadPanel from "./components/UploadPanel";
 import { gradeColor, REC_COLORS } from "./theme";
 
+// Sun when we're in dark mode (click → go light), moon when in light mode.
+function ThemeIcon({ dark }) {
+  if (dark) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  );
+}
+
 function Chevron({ open }) {
   return (
     <svg
@@ -52,6 +70,13 @@ export default function App() {
   const [showUpload, setShowUpload] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [bizOpen, setBizOpen] = useState(true); // collapsible drawer section
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem("uc-theme");
+    if (saved === "light" || saved === "dark") return saved;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  });
 
   const refresh = () =>
     fetchBusinesses().then(setBusinesses).catch((e) => setError(e.message));
@@ -59,6 +84,12 @@ export default function App() {
   useEffect(() => {
     refresh();
   }, []);
+
+  // Apply + persist the theme; components read it via CSS vars on <html>.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("uc-theme", theme);
+  }, [theme]);
 
   // Back/forward (and any manual hash edit) re-derives the view from the URL.
   useEffect(() => {
@@ -126,6 +157,14 @@ export default function App() {
         </button>
         <button className="topbar__brand" onClick={() => goto("home")}>
           Undercurrent <span>Cash-flow health scoring</span>
+        </button>
+        <button
+          className="theme-toggle"
+          onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          title={theme === "dark" ? "Light mode" : "Dark mode"}
+        >
+          <ThemeIcon dark={theme === "dark"} />
         </button>
       </header>
 
@@ -223,6 +262,7 @@ export default function App() {
           ) : (
             <Dashboard
               detail={detail}
+              theme={theme}
               onDelete={async () => {
                 await deleteBusiness(detail.id);
                 refresh();
@@ -246,7 +286,7 @@ export default function App() {
   );
 }
 
-function Dashboard({ detail, onDelete }) {
+function Dashboard({ detail, onDelete, theme }) {
   const { score } = detail;
   const rec = REC_COLORS[score.recommendation] || REC_COLORS.Review;
   const uploaded = detail.profile_type === "uploaded";
@@ -296,7 +336,7 @@ function Dashboard({ detail, onDelete }) {
 
         <div className="card">
           <div className="card__title">Cash Flow — Trailing 24 Months</div>
-          <CashflowChart data={detail.cashflow} />
+          <CashflowChart data={detail.cashflow} theme={theme} />
         </div>
       </div>
 

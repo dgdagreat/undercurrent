@@ -47,10 +47,17 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 // Monthly revenue vs expenses (bars) with the running cash balance (line).
-export default function CashflowChart({ data }) {
+export default function CashflowChart({ data, theme }) {
   // Which month the cursor is over — the hovered month's revenue bar turns
   // green and its expenses bar turns red, so the pair you're reading pops out.
   const [activeIndex, setActiveIndex] = useState(null);
+
+  const dark = theme === "dark";
+  const gridStroke = dark ? "#24314a" : "#eef2f6";
+  const axisFill = dark ? "#8595ad" : "#94a3b8";
+  const cursorFill = dark ? "rgba(148,163,184,0.12)" : "#f1f5f9";
+  // Expense bars: light gray reads too bright on the dark canvas, so mute it.
+  const expenseFill = dark ? "#5c6884" : EXPENSE;
 
   return (
     <>
@@ -59,7 +66,7 @@ export default function CashflowChart({ data }) {
           <i style={{ background: REVENUE }} /> Revenue
         </span>
         <span>
-          <i style={{ background: EXPENSE }} /> Expenses
+          <i style={{ background: expenseFill }} /> Expenses
         </span>
         <span>
           <i style={{ background: BALANCE }} /> Cash balance
@@ -78,23 +85,23 @@ export default function CashflowChart({ data }) {
           }
           onMouseLeave={() => setActiveIndex(null)}
         >
-          <CartesianGrid vertical={false} stroke="#eef2f6" />
+          <CartesianGrid vertical={false} stroke={gridStroke} />
           <XAxis
             dataKey="month"
             tickFormatter={shortMonth}
-            tick={{ fontSize: 11, fill: "#94a3b8" }}
+            tick={{ fontSize: 11, fill: axisFill }}
             interval={2}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             tickFormatter={usdCompact}
-            tick={{ fontSize: 11, fill: "#94a3b8" }}
+            tick={{ fontSize: 11, fill: axisFill }}
             axisLine={false}
             tickLine={false}
             width={52}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f1f5f9" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: cursorFill }} />
           {/* Animation off: the chart should snap in instantly when you switch
               businesses (the mount animation replayed a ~1.5s grow on every
               selection and flashed an empty frame mid-transition). Per-Cell
@@ -108,7 +115,7 @@ export default function CashflowChart({ data }) {
           <Bar dataKey="expenses" radius={[3, 3, 0, 0]} barSize={9}
             isAnimationActive={false}>
             {data.map((_, i) => (
-              <Cell key={i} fill={i === activeIndex ? EXPENSE_HOVER : EXPENSE} />
+              <Cell key={i} fill={i === activeIndex ? EXPENSE_HOVER : expenseFill} />
             ))}
           </Bar>
           <Line
