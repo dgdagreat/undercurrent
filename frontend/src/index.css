@@ -21,11 +21,18 @@
   --red: #dc2626;
   --red-soft: #fef2f2;
   --slate: #475569;
+  --gauge-track: #e2e8f0;
 
   --radius: 14px;
   --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.06);
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  --font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  /* Soft indigo halo behind the top of the page — a whisper of brand color. */
+  --page-glow: radial-gradient(
+    1100px 420px at 50% -140px,
+    #eef2ff 0%,
+    var(--surface) 58%
+  );
 }
 
 * {
@@ -36,7 +43,8 @@ body {
   margin: 0;
   font-family: var(--font);
   color: var(--text);
-  background: var(--surface);
+  background: var(--page-glow), var(--surface);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -503,7 +511,7 @@ body {
 .bar__fill {
   height: 100%;
   border-radius: 999px;
-  transition: width 0.4s ease;
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .factor__explain {

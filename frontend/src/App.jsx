@@ -278,7 +278,11 @@ function Dashboard({ detail, onDelete }) {
       <div className="grid grid--top">
         <div className="card score-card">
           <div className="card__title">Cash-Flow Health Score</div>
-          <ScoreGauge score={score.overall_score} grade={score.grade} />
+          <ScoreGauge
+            key={detail.id}
+            score={score.overall_score}
+            grade={score.grade}
+          />
           <div
             className="rec-badge"
             style={{ background: rec.bg, color: rec.fg }}
@@ -302,7 +306,7 @@ function Dashboard({ detail, onDelete }) {
         swings are removed before judging stability, so predictable patterns
         aren't mistaken for risk.
       </p>
-      <FactorBreakdown factors={score.factors} />
+      <FactorBreakdown key={detail.id} factors={score.factors} />
     </>
   );
 }
