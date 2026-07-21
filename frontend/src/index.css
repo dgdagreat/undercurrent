@@ -426,6 +426,12 @@ body {
   display: inline-block;
 }
 
+/* Ease the hovered month's bars between colors (revenue→green, expenses→red)
+   instead of snapping. Applies only to the SVG bar fills. */
+.recharts-bar-rectangle path {
+  transition: fill 0.18s ease-in-out;
+}
+
 /* Factor breakdown ------------------------------------------------- */
 .factors {
   display: grid;
