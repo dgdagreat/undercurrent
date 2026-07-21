@@ -12,6 +12,9 @@ export default function App() {
   const [detail, setDetail] = useState(null);
   const [error, setError] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
+  // Hamburger-toggled business drawer; starts collapsed so the report owns
+  // the screen.
+  const [navOpen, setNavOpen] = useState(false);
 
   const refresh = (selectId) =>
     fetchBusinesses()
@@ -44,53 +47,92 @@ export default function App() {
 
   if (error) return <div className="error">Couldn't reach the API: {error}</div>;
 
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="sidebar__brand">
-          Pulse
-          <span>Cash-flow health scoring</span>
-        </div>
-        <div className="sidebar__label">Sample businesses</div>
-        <div className="biz-list">
-          {businesses.map((b) => {
-            const gc = gradeColor(b.grade);
-            return (
-              <button
-                key={b.id}
-                className={`biz-item${b.id === selectedId ? " active" : ""}`}
-                onClick={() => setSelectedId(b.id)}
-              >
-                <div>
-                  <div className="biz-item__name">{b.name}</div>
-                  <div className="biz-item__industry">
-                    {b.industry}
-                    {b.profile_type === "uploaded" && (
-                      <span className="uploaded-badge">uploaded</span>
-                    )}
-                  </div>
-                </div>
-                <div
-                  className="biz-item__grade"
-                  style={{ background: gc.bg, color: gc.fg }}
-                >
-                  {b.grade}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        <button
-          className="btn btn--upload"
-          onClick={() => setShowUpload(true)}
-        >
-          ⬆ Upload your business
-        </button>
+  const selectedBiz = businesses.find((b) => b.id === selectedId);
 
-        <div className="sidebar__foot">
-          Portfolio demo · scores computed from generated or uploaded transaction
-          data, not a credit bureau. No real lending decisions.
+  return (
+    <div className={`app${navOpen ? "" : " app--nav-closed"}`}>
+      <aside className="sidebar">
+        <div className="sidebar__top">
+          <button
+            className="hamburger"
+            onClick={() => setNavOpen((o) => !o)}
+            aria-label={navOpen ? "Close business list" : "Open business list"}
+            aria-expanded={navOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+          {navOpen && (
+            <div className="sidebar__brand">
+              Pulse
+              <span>Cash-flow health scoring</span>
+            </div>
+          )}
         </div>
+
+        {navOpen && (
+          <>
+            <div className="sidebar__label">
+              Businesses ({businesses.length})
+            </div>
+            <div className="biz-list">
+              {businesses.map((b) => {
+                const gc = gradeColor(b.grade);
+                return (
+                  <button
+                    key={b.id}
+                    className={`biz-item${b.id === selectedId ? " active" : ""}`}
+                    onClick={() => {
+                      setSelectedId(b.id);
+                      setNavOpen(false); // picked one — get out of the way
+                    }}
+                  >
+                    <div>
+                      <div className="biz-item__name">{b.name}</div>
+                      <div className="biz-item__industry">
+                        {b.industry}
+                        {b.profile_type === "uploaded" && (
+                          <span className="uploaded-badge">uploaded</span>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      className="biz-item__grade"
+                      style={{ background: gc.bg, color: gc.fg }}
+                    >
+                      {b.grade}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              className="btn btn--upload"
+              onClick={() => setShowUpload(true)}
+            >
+              ⬆ Upload your business
+            </button>
+
+            <div className="sidebar__foot">
+              Portfolio demo · scores computed from generated or uploaded
+              transaction data, not a credit bureau. No real lending decisions.
+            </div>
+          </>
+        )}
+
+        {!navOpen && selectedBiz && (
+          <div
+            className="rail-grade"
+            style={{
+              background: gradeColor(selectedBiz.grade).bg,
+              color: gradeColor(selectedBiz.grade).fg,
+            }}
+            title={selectedBiz.name}
+          >
+            {selectedBiz.grade}
+          </div>
+        )}
       </aside>
 
       <main className="main">

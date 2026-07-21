@@ -47,6 +47,11 @@ body {
   display: grid;
   grid-template-columns: 300px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.22s ease;
+}
+
+.app--nav-closed {
+  grid-template-columns: 64px 1fr;
 }
 
 .sidebar {
@@ -56,6 +61,58 @@ body {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow: hidden;
+}
+
+.app--nav-closed .sidebar {
+  padding: 26px 12px;
+  align-items: center;
+}
+
+.sidebar__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The three-line hamburger toggle. */
+.hamburger {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: var(--bg-panel);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  transition: border-color 0.15s;
+}
+
+.hamburger:hover {
+  border-color: var(--indigo);
+}
+
+.hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: #cbd5e1;
+}
+
+/* Collapsed rail: show the current business's grade under the hamburger. */
+.rail-grade {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
 }
 
 .sidebar__brand {
@@ -607,8 +664,16 @@ body {
 }
 
 @media (max-width: 900px) {
-  .app {
+  .app,
+  .app--nav-closed {
     grid-template-columns: 1fr;
+  }
+  /* Collapsed on mobile = a slim top bar holding just the hamburger. */
+  .app--nav-closed .sidebar {
+    flex-direction: row;
+    padding: 12px 16px;
+    align-items: center;
+    gap: 12px;
   }
   .grid--top {
     grid-template-columns: 1fr;
