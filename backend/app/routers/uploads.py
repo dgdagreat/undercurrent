@@ -17,9 +17,9 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..database import get_db
-from ..ingest import IngestError, parse_transactions_csv
 from ..scoring.engine import InsufficientDataError
 from ..services import score_and_cache
+from ..sources import CsvSource, SourceError
 
 router = APIRouter(prefix="/api", tags=["uploads"])
 
@@ -46,9 +46,11 @@ async def upload_business(
     if not name:
         raise HTTPException(status_code=422, detail="Business name is required.")
 
+    # Everything below the seam is source-agnostic: a Plaid or QuickBooks
+    # connector would swap in here and the rest of this endpoint wouldn't move.
     try:
-        tx = parse_transactions_csv(raw)
-    except IngestError as e:
+        tx = CsvSource(raw).validated()
+    except SourceError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
     biz = models.Business(

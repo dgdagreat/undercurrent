@@ -182,6 +182,23 @@ There's a **Download a sample CSV** link in the upload dialog for instant demos.
 Uploaded businesses are badged in the sidebar and can be deleted; the 30
 samples are protected.
 
+### Where bank/POS connectors would plug in
+
+Ledger ingestion goes through a deliberate seam:
+[`app/sources/`](backend/app/sources/) defines a tiny `TransactionSource`
+contract — *produce transactions in the platform's normalized schema* — and
+`CsvSource` is its first implementation. The upload endpoint, persistence,
+scoring, and dashboard consume only that schema and never know where rows came
+from.
+
+Adding a real connector (Plaid for bank feeds, QuickBooks/Xero for accounting,
+Square for POS) means writing one new `TransactionSource` subclass — auth +
+fetch + map to the schema — and nothing else moves. The contract is enforced at
+the boundary (`validated()`), so a misbehaving connector fails loudly instead
+of corrupting scores. Plaid's free sandbox (fake credentials, real API) is the
+natural first target; it should be env-gated so the demo still runs from a bare
+`git clone` with no keys.
+
 ---
 
 ## Architecture
@@ -192,6 +209,7 @@ backend/                     FastAPI + pandas over SQLite
     generators.py            Seeded mock-data generators (30 businesses)
     seed.py                  Rebuilds the DB and caches a score per business
     ingest.py                Forgiving CSV parser for uploaded ledgers
+    sources/                 TransactionSource seam (CSV today; Plaid/POS drop in here)
     services.py              Shared score-and-cache step (seed + uploads)
     models.py                SQLAlchemy models (ledger-as-source-of-truth)
     scoring/                 Pure, framework-free scoring package
