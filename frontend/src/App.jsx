@@ -28,11 +28,26 @@ function Chevron({ open }) {
   );
 }
 
+// The URL hash is the single source of truth for which view is showing:
+// #/ (home), #/about, #/business/12. Navigating assigns the hash; a hashchange
+// listener maps it back into state. That's what makes the browser's
+// back/forward buttons, refresh, and deep links all work without a router
+// dependency.
+function parseHash() {
+  const h = window.location.hash;
+  const m = h.match(/^#\/business\/(\d+)/);
+  if (m) return { view: "business", id: Number(m[1]) };
+  if (h.startsWith("#/about")) return { view: "about", id: null };
+  return { view: "home", id: null };
+}
+
 export default function App() {
+  const initial = parseHash();
   const [businesses, setBusinesses] = useState([]);
-  const [view, setView] = useState("home"); // home | business | about
-  const [selectedId, setSelectedId] = useState(null);
+  const [view, setView] = useState(initial.view); // home | business | about
+  const [selectedId, setSelectedId] = useState(initial.id);
   const [detail, setDetail] = useState(null);
+  const [detailError, setDetailError] = useState(null);
   const [error, setError] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -45,13 +60,29 @@ export default function App() {
     refresh();
   }, []);
 
+  // Back/forward (and any manual hash edit) re-derives the view from the URL.
+  useEffect(() => {
+    const apply = () => {
+      const r = parseHash();
+      setView(r.view);
+      setSelectedId(r.id);
+    };
+    window.addEventListener("hashchange", apply);
+    return () => window.removeEventListener("hashchange", apply);
+  }, []);
+
   // Load detail whenever the selection changes.
   useEffect(() => {
-    if (selectedId == null) return;
     setDetail(null);
+    setDetailError(null);
+    if (selectedId == null) return;
     fetchBusiness(selectedId)
       .then(setDetail)
-      .catch((e) => setError(e.message));
+      .catch(() =>
+        setDetailError(
+          "This business doesn't exist anymore — it may have been a deleted upload."
+        )
+      );
   }, [selectedId]);
 
   // Esc dismisses whatever's on top: the upload dialog first, then the drawer.
@@ -65,14 +96,15 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showUpload, navOpen]);
 
+  // Navigation = assigning the hash; the hashchange listener updates state.
+  // Each assignment creates a history entry, so back/forward just work.
   const openBusiness = (id) => {
-    setSelectedId(id);
-    setView("business");
+    window.location.hash = `/business/${id}`;
     setNavOpen(false);
   };
 
   const goto = (v) => {
-    setView(v);
+    window.location.hash = v === "about" ? "/about" : "/";
     setNavOpen(false);
   };
 
@@ -184,16 +216,17 @@ export default function App() {
         )}
         {view === "about" && <AboutPage onUpload={() => setShowUpload(true)} />}
         {view === "business" &&
-          (!detail ? (
+          (detailError ? (
+            <div className="loading">{detailError}</div>
+          ) : !detail ? (
             <div className="loading">Loading…</div>
           ) : (
             <Dashboard
               detail={detail}
               onDelete={async () => {
                 await deleteBusiness(detail.id);
-                setSelectedId(null);
-                setView("home");
                 refresh();
+                window.location.hash = "/";
               }}
             />
           ))}
