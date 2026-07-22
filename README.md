@@ -182,9 +182,12 @@ input is the whole point:
 - **Human errors, not stack traces** — "Row 17: could not parse date
   '13/45/2025'" instead of a 500.
 
-There's a **Download a sample CSV** link in the upload dialog for instant demos.
-Uploaded businesses are badged in the sidebar and can be deleted; the 30
-samples are protected.
+There's a **Download a sample CSV** link in the upload dialog for instant demos,
+and a ready-made bank-export-style file at
+[`docs/sample-transactions.csv`](docs/sample-transactions.csv) (24 months, no
+category column — it exercises the sign-inference and loan-keyword paths; scores
+**A- / Approve**). Uploaded businesses are badged in the sidebar and can be
+deleted; the 30 samples are protected.
 
 ### Where bank/POS connectors would plug in
 
