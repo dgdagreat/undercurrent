@@ -19,7 +19,9 @@ const BALANCE = "#0d9488";
 const REVENUE_HOVER = "#059669";
 const EXPENSE_HOVER = "#dc2626";
 
-function CustomTooltip({ active, payload, label }) {
+// Exported so the "net comes from the full data row, not the per-series
+// payload" fix can be unit-tested directly.
+export function CashflowTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   // Use the full underlying data row (payload[0].payload), not the per-series
   // payload — the latter only carries the *rendered* series (revenue, expenses,
@@ -101,7 +103,7 @@ export default function CashflowChart({ data, theme }) {
             tickLine={false}
             width={52}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: cursorFill }} />
+          <Tooltip content={<CashflowTooltip />} cursor={{ fill: cursorFill }} />
           {/* Animation off: the chart should snap in instantly when you switch
               businesses (the mount animation replayed a ~1.5s grow on every
               selection and flashed an empty frame mid-transition). Per-Cell

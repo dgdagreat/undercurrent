@@ -8,7 +8,11 @@ export async function fetchBusinesses() {
 
 export async function fetchBusiness(id) {
   const res = await fetch(`/api/businesses/${id}`);
-  if (!res.ok) throw new Error("Failed to load business");
+  if (!res.ok) {
+    const err = new Error("Failed to load business");
+    err.status = res.status; // let callers distinguish 404 from a transient error
+    throw err;
+  }
   return res.json();
 }
 
@@ -26,6 +30,21 @@ export async function uploadBusiness({ file, name, industry, openingBalance }) {
   const res = await fetch("/api/uploads", { method: "POST", body: form });
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new Error(body?.detail || "Upload failed");
+  return body;
+}
+
+// Recompute a business's score under hypothetical adjustments (read-only on the
+// server). Pass an AbortController signal so rapid slider drags cancel stale
+// in-flight requests. Returns { baseline, adjusted, cashflow }.
+export async function simulateWhatIf(id, params, signal) {
+  const res = await fetch(`/api/businesses/${id}/whatif`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+    signal,
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(body?.detail || "Simulation failed");
   return body;
 }
 
