@@ -5,10 +5,16 @@ for *any* revenue variability, we split a monthly series into:
 
     observed = trend + seasonal + residual
 
-and let the factors judge the pieces that actually signal risk (the trend and
-the residual) while ignoring the piece that is merely predictable (the
-seasonal component). A landscaper that earns nothing in January is not
-"unstable" — that swing lives entirely in the seasonal term.
+and judge only the pieces that actually signal risk while ignoring the piece
+that is merely predictable (the seasonal component). A landscaper that earns
+nothing in January is not "unstable" — that swing lives in the seasonal term.
+
+The **trend** factor uses this decomposition directly (the slope of the
+deseasonalized series). The **revenue-stability** factor deliberately does NOT
+use the residual — with only ~2 years of data an in-sample residual overfits
+and collapses to near-zero for any series, so stability is measured
+out-of-sample instead, by `predictability_cv` (does one year's monthly *shape*
+predict the next?). See that function's docstring for the full rationale.
 
 We roll our own rather than pull in statsmodels: it keeps the dependency list
 tiny and makes the method transparent in a code walkthrough.

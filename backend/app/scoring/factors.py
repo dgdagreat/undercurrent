@@ -93,8 +93,8 @@ def runway(monthly: pd.DataFrame) -> FactorResult:
         raw_value=f"{worst_runway:.1f} mo at trough",
         explanation=(
             f"At its lowest point the business {dipped}, leaving roughly "
-            f"{max(worst_runway, 0):.1f} months of operating expenses in reserve. "
-            "This is measured at the seasonal low, not the average month."
+            f"{max(worst_runway, 0):.1f} months of total monthly outflows in "
+            "reserve. This is measured at the seasonal low, not the average month."
         ),
     )
 

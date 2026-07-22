@@ -57,3 +57,23 @@ class BusinessDetail(BaseModel):
     opening_balance: float
     score: ScoreOut
     cashflow: list[CashflowPoint]
+
+
+class WhatIfRequest(BaseModel):
+    """The five what-if levers; every field defaults to a no-op."""
+
+    opening_buffer_delta: float = 0.0
+    cash_injection_amount: float = 0.0
+    cash_injection_month: str | None = None
+    loan_paydown_delta: float = 0.0
+    expense_reduction_pct: float = 0.0
+    revenue_growth_pct: float = 0.0
+
+
+class WhatIfResponse(BaseModel):
+    # baseline is recomputed fresh (not the cached ScoreRun) so it lines up
+    # exactly with `adjusted` — same code path, same as_of — and the UI can diff
+    # them cleanly.
+    baseline: ScoreOut
+    adjusted: ScoreOut
+    cashflow: list[CashflowPoint]
