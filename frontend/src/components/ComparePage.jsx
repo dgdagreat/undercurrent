@@ -18,17 +18,20 @@ const FACTOR_ORDER = [
 // to a SaaS A, scored by the same six factors.
 export default function ComparePage({ ids, onSelect }) {
   const [details, setDetails] = useState({});
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     let alive = true;
     setError(null);
+    setLoaded(false);
     Promise.all(ids.map((id) => fetchBusiness(id).catch(() => null)))
       .then((list) => {
         if (!alive) return;
         const map = {};
         list.forEach((d) => d && (map[d.id] = d));
         setDetails(map);
+        setLoaded(true);
       })
       .catch((e) => alive && setError(e.message));
     return () => {
@@ -45,7 +48,15 @@ export default function ComparePage({ ids, onSelect }) {
         Pick 2–4 businesses to compare from the menu (the ⇄ buttons).
       </div>
     );
-  if (cols.length < ids.length) return <div className="loading">Loading…</div>;
+  if (!loaded) return <div className="loading">Loading…</div>;
+  // Some ids may have failed (a deleted upload, a stale compare link).
+  if (cols.length < 2)
+    return (
+      <div className="loading">
+        Couldn't load enough of the selected businesses to compare — they may
+        have been deleted. Pick 2–4 from the menu.
+      </div>
+    );
 
   // Build factor label lookup from the first business that has each factor.
   const labelFor = {};
