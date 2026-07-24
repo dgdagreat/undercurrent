@@ -81,10 +81,13 @@ def runway(monthly: pd.DataFrame) -> FactorResult:
         worst_runway = float(min_balance / avg_expense)
 
     # Below zero means the account went into overdraft at some point -> heavy
-    # penalty. Two-plus months of cushion at the worst point is excellent.
+    # penalty. The bar for a top score is deliberately demanding: two months of
+    # cushion is merely solid (80), and it takes ~5 months to earn 100. A thin
+    # sub-one-month buffer scores poorly. This is what keeps a healthy-but-not-
+    # exceptional business off the top of the grade curve.
     sub = _piecewise(
         worst_runway,
-        [(-1.0, 0), (0.0, 30), (0.5, 55), (1.0, 72), (2.0, 92), (3.0, 100)],
+        [(-1.0, 0), (0.0, 22), (0.5, 42), (1.0, 58), (2.0, 80), (3.5, 93), (5.0, 100)],
     )
     dipped = "dipped into overdraft" if min_balance < 0 else "held a positive buffer"
     return FactorResult(
@@ -109,11 +112,12 @@ def debt_service(monthly: pd.DataFrame) -> FactorResult:
     if debt <= 0:
         return FactorResult(
             name="debt_service",
-            sub_score=90.0,
+            sub_score=82.0,
             raw_value="No debt service",
             explanation=(
                 "The business carries no scheduled loan repayments, so operating "
-                "cash flow isn't committed to debt. Scored as low risk."
+                "cash flow isn't committed to debt — low risk. (Not a perfect "
+                "score: with no debt there's no demonstrated coverage history.)"
             ),
         )
 

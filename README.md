@@ -117,32 +117,36 @@ why it landed where it did — that breakdown is the centerpiece of the dashboar
 ### The thirty sample businesses
 
 Thirty fictional businesses, **eighteen of them seasonal**, spanning the full
-A+ → F range. The point of loading the set with seasonal businesses is to make
+A → F range. The point of loading the set with seasonal businesses is to make
 one thing unmistakable: **seasonality is never the risk signal — management is.**
 Seasonal businesses show up at *every* grade, sitting right next to their
 non-seasonal peers.
 
-Grade distribution (13 hand-written profiles + 17 generated from
+The grading is deliberately **strict** — an A is rare, reserved for genuinely
+exceptional coverage (≈5 months of runway at the trough), so the distribution
+discriminates instead of rubber-stamping. Grade distribution (13 hand-written
+profiles + 17 generated from
 [`generators.py`](backend/app/generators.py) specs):
 
 | Grade band | Verdict | Count | Examples |
 | --- | --- | --- | --- |
-| A+ / A / A- | Approve | 15 | Northwind (SaaS), **Wonder Junction Amusement Park**, Summit Peak Ski Resort, Ledger & Quill Tax, Evergreen Landscaping, Roast Republic Coffee |
-| B+ / B / B- | Approve | 4 | Tannenbaum Tree Farm, Frostbite Ski & Board, Meridian Agency |
-| C+ / C- | Review | 2 | Camp Wildwood (concentrated season), Harbor Street (slow decline) |
-| D+ | Review | 4 | Alpine Snow & Plow, Lakeside Pools, QuickHop Courier, Willow & Vine |
+| A / A- | Approve | 8 | Big Bang Fireworks, Bayside Marina, Northwind (SaaS), Fright Night, Evergreen Landscaping |
+| B+ / B / B- | Approve | 10 | **Wonder Junction Amusement Park**, Ledger & Quill Tax, Summit Peak Ski Resort, Frostbite Ski, Tannenbaum Tree Farm |
+| C+ / C- | Review | 2 | Meridian Agency (lumpy collections), Camp Wildwood (concentrated season) |
+| D+ / D | Review | 5 | Harbor Street (slow decline), Alpine Snow & Plow, Lakeside Pools, QuickHop Courier, Willow & Vine |
 | F | Decline | 5 | Riptide Water Park, Overland Freight, Cliffside Bistro, Stalled Studio, Pivot Labs |
 
-**Seasonal spotlight** — the same "peak-then-trough" shape lands at four
+**Seasonal spotlight** — the same "peak-then-trough" shape lands at five
 different grades depending only on how the business is run:
 
 | Seasonal business | Grade | What made the difference |
 | --- | --- | --- |
-| Wonder Junction Amusement Park | **A-** | Big summer/holiday season, healthy margins, well-cushioned for the off-season |
-| Summit Peak Ski Resort | **B / A** | A *winter*-peaking season — the mirror image of most — scored just as fairly |
-| Camp Wildwood | **C+** | Revenue jammed into three months with only a thin off-season cushion |
-| Alpine Snow & Plow | **D+** | Its season depends on the *weather*, so year-over-year it's genuinely less predictable — the stability factor catches that |
-| Lakeside Pools & Patio | **D+** | Predictable season, but doesn't bank enough to cover winter — runs thin at the trough |
+| Big Bang Fireworks | **A** | Twin-peak season, strong margins, deeply cushioned — the rare top grade |
+| Wonder Junction Amusement Park | **B+** | Big summer/holiday season, healthy margins, well-cushioned for the off-season |
+| Summit Peak Ski Resort | **B-** | A *winter*-peaking season — the mirror image of most — scored just as fairly |
+| Camp Wildwood | **C-** | Revenue jammed into three months with only a thin off-season cushion |
+| Alpine Snow & Plow | **D** | Its season depends on the *weather*, so year-over-year it's genuinely less predictable — the stability factor catches that |
+| Lakeside Pools & Patio | **D** | Predictable season, but doesn't bank enough to cover winter — runs thin at the trough |
 | Riptide Water Park | **F** | A declining, over-leveraged, thinly-cushioned seasonal business — genuinely in trouble |
 
 Contrast that with the businesses the model *declines*: none are declined for
