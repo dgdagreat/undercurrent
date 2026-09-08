@@ -55,3 +55,12 @@ export async function deleteBusiness(id) {
     throw new Error(body?.detail || "Delete failed");
   }
 }
+
+// The trained ML model's default-risk second opinion. Returns null if the model
+// isn't trained (503) so the UI can simply hide the panel.
+export async function fetchMlPrediction(id) {
+  const res = await fetch(`/api/businesses/${id}/ml`);
+  if (res.status === 503 || res.status === 404) return null;
+  if (!res.ok) throw new Error("Failed to load ML prediction");
+  return res.json();
+}

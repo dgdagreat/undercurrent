@@ -212,6 +212,43 @@ natural first target; it should be env-gated so the demo still runs from a bare
 
 ---
 
+## Machine-learning risk model (learned second opinion)
+
+Alongside the transparent rule-based grade, a trained **gradient-boosting model**
+predicts each business's probability of default from the same cash-flow signals —
+a learned check on the hand-built rules, shown on every business page with a
+per-prediction **SHAP** explanation. Full write-up:
+[**docs/MODEL_CARD.md**](docs/MODEL_CARD.md).
+
+The interesting part is the **honest labeled-data pipeline**. Real default
+outcomes don't exist for fictional businesses, so
+[`app/ml/dataset.py`](backend/app/ml/dataset.py) samples latent fundamentals,
+builds a noisy 24-month ledger, and draws each label *stochastically* from a
+latent default probability — with two interaction effects a linear model can't
+capture. The model sees only noisy ledger estimates, so it can't trivially
+re-derive a rule and its accuracy is honestly capped.
+
+| | |
+| --- | --- |
+| Held-out **ROC-AUC** | **0.85** (5-fold CV 0.830 ± 0.004) |
+| Logistic baseline | 0.84 — the boosted model's edge comes from interactions |
+| PR-AUC / Brier | 0.65 (base rate 0.21) / 0.11 |
+| Top learned features | runway · growth trend · revenue predictability |
+
+That last row is the punchline: **the model independently rediscovered the same
+signals the rule engine weights most** — and where it *disagrees* (e.g. it rates
+the operationally-profitable-but-overleveraged trucking firm as merely elevated,
+not a decline) is exactly the kind of case worth discussing.
+
+Pipeline (`backend/app/ml/`): `features.py` (shared train/serve extractor) →
+`dataset.py` (labeled data) → `train.py` (fit + evaluate + SHAP) → `model.py`
+(serving). Regenerate with `python -m app.ml.dataset && python -m app.ml.train`.
+The endpoint returns **503** (and the UI hides the panel) if the model isn't
+trained, so the rest of the app runs without it. An EDA + training walkthrough
+lives in [`notebooks/`](notebooks/).
+
+---
+
 ## Architecture
 
 > For a full walkthrough — the data flow, the layering, and the design
@@ -231,8 +268,13 @@ backend/                     FastAPI + pandas over SQLite
       factors.py             The six factor computations
       engine.py              Orchestration -> overall score + breakdown
       config.py              Weights + benchmark thresholds (all tunable)
+    ml/                      ML risk model (learned second opinion)
+      features.py            Shared feature extractor (train == serve)
+      dataset.py             Synthetic labeled-data pipeline
+      train.py               Fit + evaluate + SHAP -> artifacts/
+      model.py               Lazy-loaded serving (probability + SHAP)
     routers/                 REST API (businesses.py, uploads.py)
-  tests/                     Scoring fairness + CSV ingestion tests
+  tests/                     Scoring fairness + CSV ingestion + ML tests
 frontend/                    React (Vite) + Recharts dashboard
 ```
 

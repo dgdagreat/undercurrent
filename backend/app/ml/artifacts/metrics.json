@@ -1,0 +1,88 @@
+{
+  "model": "GradientBoostingClassifier",
+  "n_train": 3000,
+  "n_test": 1000,
+  "base_rate": 0.2092,
+  "roc_auc": 0.8503,
+  "pr_auc": 0.6542,
+  "brier": 0.1116,
+  "cv_auc_mean": 0.8302,
+  "cv_auc_std": 0.0044,
+  "baseline_logistic_roc_auc": 0.8399,
+  "precision_default": 0.6765,
+  "recall_default": 0.4402,
+  "f1_default": 0.5333,
+  "importance": [
+    {
+      "feature": "runway_trough_mo",
+      "label": "Runway at trough (months)",
+      "mean_abs_shap": 0.7523211055283285
+    },
+    {
+      "feature": "trend_pct",
+      "label": "Deseasonalized growth (%/yr)",
+      "mean_abs_shap": 0.743804700576449
+    },
+    {
+      "feature": "predictability_cv",
+      "label": "Unpredictable revenue variation",
+      "mean_abs_shap": 0.26743146627220343
+    },
+    {
+      "feature": "revenue_cv",
+      "label": "Raw revenue volatility",
+      "mean_abs_shap": 0.22108905118003636
+    },
+    {
+      "feature": "months_negative",
+      "label": "Months in overdraft",
+      "mean_abs_shap": 0.161859706535749
+    },
+    {
+      "feature": "operating_margin",
+      "label": "Operating margin",
+      "mean_abs_shap": 0.11841195904757669
+    },
+    {
+      "feature": "log_avg_revenue",
+      "label": "Business scale (log revenue)",
+      "mean_abs_shap": 0.08851275516942196
+    },
+    {
+      "feature": "seasonality_strength",
+      "label": "Seasonality strength",
+      "mean_abs_shap": 0.08351835079073322
+    },
+    {
+      "feature": "debt_to_revenue",
+      "label": "Debt payments \u00f7 revenue",
+      "mean_abs_shap": 0.07733850800324062
+    },
+    {
+      "feature": "current_runway_mo",
+      "label": "Current runway (months)",
+      "mean_abs_shap": 0.07170965565083674
+    },
+    {
+      "feature": "dscr",
+      "label": "Debt-service coverage (DSCR)",
+      "mean_abs_shap": 0.04978732847619502
+    },
+    {
+      "feature": "dso_days",
+      "label": "Days sales outstanding",
+      "mean_abs_shap": 0.0400235576630293
+    },
+    {
+      "feature": "expense_rev_corr",
+      "label": "Expense-to-revenue elasticity",
+      "mean_abs_shap": 0.016517712886000655
+    },
+    {
+      "feature": "has_receivables",
+      "label": "Has receivables",
+      "mean_abs_shap": 0.0
+    }
+  ],
+  "trained_at": "2026-09-08T22:46:57+00:00"
+}

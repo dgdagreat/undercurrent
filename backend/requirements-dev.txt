@@ -2,3 +2,8 @@
 #   pip install -r requirements-dev.txt
 -r requirements.txt
 pytest==9.1.1
+# Training-only: model evaluation plots (ROC/PR, calibration, SHAP summary).
+matplotlib==3.9.2
+# Notebook execution (notebooks/undercurrent_risk_model.ipynb).
+nbconvert
+ipykernel

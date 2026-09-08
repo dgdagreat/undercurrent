@@ -5,6 +5,7 @@ import CashflowChart from "./components/CashflowChart";
 import ComparePage from "./components/ComparePage";
 import FactorBreakdown from "./components/FactorBreakdown";
 import HomePage from "./components/HomePage";
+import MlRiskPanel from "./components/MlRiskPanel";
 import ScoreGauge from "./components/ScoreGauge";
 import UploadPanel from "./components/UploadPanel";
 import WhatIfPanel from "./components/WhatIfPanel";
@@ -362,6 +363,8 @@ function Dashboard({ detail, onDelete, theme }) {
         aren't mistaken for risk.
       </p>
       <FactorBreakdown key={detail.id} factors={score.factors} />
+
+      <MlRiskPanel key={`ml-${detail.id}`} businessId={detail.id} />
 
       <WhatIfPanel key={`whatif-${detail.id}`} detail={detail} theme={theme} />
     </>

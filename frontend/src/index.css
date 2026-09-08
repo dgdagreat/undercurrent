@@ -1473,3 +1473,163 @@ body {
     padding: 24px;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * ML risk panel                                                       *
+ * ------------------------------------------------------------------ */
+.ml-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ml-head {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.ml-prob {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ml-prob__num {
+  font-size: 40px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.ml-prob__label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-band {
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+.ml-prob__track {
+  position: relative;
+  height: 12px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ml-prob__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+
+.ml-prob__base {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 18px;
+  background: var(--text);
+  opacity: 0.5;
+}
+
+.ml-prob__scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+.ml-drivers__title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.ml-drivers {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.ml-driver {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) 2fr 56px;
+  gap: 12px;
+  align-items: center;
+}
+
+.ml-driver__label {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ml-driver__val {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.ml-driver__track {
+  position: relative;
+  height: 12px;
+  background: var(--surface);
+  border-radius: 4px;
+}
+
+.ml-driver__center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--border);
+}
+
+.ml-driver__bar {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  min-width: 2px;
+  transition: width 0.4s ease;
+}
+
+.ml-driver__dir {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.ml-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .ml-head {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .ml-driver {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .ml-driver__dir {
+    text-align: left;
+  }
+}

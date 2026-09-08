@@ -9,6 +9,9 @@ backend/cashflow.db
 frontend/node_modules/
 frontend/dist/
 
+# Jupyter
+.ipynb_checkpoints/
+
 # Editor / OS
 .DS_Store
 .vscode/

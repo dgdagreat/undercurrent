@@ -189,3 +189,27 @@ def simulate_whatif(
         adjusted=_score_out_from_result(adjusted),
         cashflow=cashflow_points_from_frame(tx2, opening2),
     )
+
+
+@router.get("/businesses/{business_id}/ml", response_model=schemas.MlPrediction)
+def ml_prediction(business_id: int, db: Session = Depends(get_db)):
+    """The trained ML model's default-risk second opinion for one business.
+
+    A learned complement to the rule-based score: a gradient-boosting model's
+    probability of default plus the SHAP contributions that drove it. Returns
+    503 if the model artifact hasn't been trained (`python -m app.ml.train`).
+    """
+    from ..ml import model as ml_model
+
+    biz = db.get(models.Business, business_id)
+    if biz is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+
+    tx, inv = frames_for(biz)
+    result = ml_model.predict(tx, inv, biz.opening_balance)
+    if result is None:
+        raise HTTPException(
+            status_code=503,
+            detail="The ML model isn't trained yet. Run `python -m app.ml.train`.",
+        )
+    return schemas.MlPrediction(**result)

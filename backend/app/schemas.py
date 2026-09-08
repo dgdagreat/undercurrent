@@ -77,3 +77,21 @@ class WhatIfResponse(BaseModel):
     baseline: ScoreOut
     adjusted: ScoreOut
     cashflow: list[CashflowPoint]
+
+
+class MlContribution(BaseModel):
+    feature: str
+    label: str
+    value: float
+    shap: float           # log-odds push (+ toward default, - away)
+    direction: str        # "increases" | "decreases"
+
+
+class MlPrediction(BaseModel):
+    """The learned model's second opinion, alongside the rule-based score."""
+
+    default_prob: float
+    risk_band: str
+    base_rate: float      # population default rate (for context)
+    roc_auc: float | None  # the model's held-out AUC (for context)
+    contributions: list[MlContribution]
