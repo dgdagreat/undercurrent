@@ -220,6 +220,8 @@ a learned check on the hand-built rules, shown on every business page with a
 per-prediction **SHAP** explanation. Full write-up:
 [**docs/MODEL_CARD.md**](docs/MODEL_CARD.md).
 
+![SHAP feature importance — the learned model leans on runway, growth trend, and revenue predictability](docs/ml/shap_summary.png)
+
 The interesting part is the **honest labeled-data pipeline**. Real default
 outcomes don't exist for fictional businesses, so
 [`app/ml/dataset.py`](backend/app/ml/dataset.py) samples latent fundamentals,
