@@ -1,0 +1,15 @@
+# Keep the build context (and image) lean — these are rebuilt inside the image.
+**/.venv/
+**/node_modules/
+**/dist/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+backend/cashflow.db
+.git/
+.github/
+notebooks/
+docs/
+*.md
+.DS_Store
+.ipynb_checkpoints/

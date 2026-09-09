@@ -332,6 +332,26 @@ python -m pytest
 
 ---
 
+## Deploy (single service)
+
+In production the **FastAPI process serves the built React app too** — one
+service, one origin, no CORS. The [`Dockerfile`](Dockerfile) builds the frontend,
+installs the backend, seeds the 30-business database into the image, and runs
+uvicorn; the trained ML model artifact is committed, so `/ml` works on boot.
+
+```bash
+docker build -t undercurrent .
+docker run -p 8000:8000 undercurrent      # open http://localhost:8000
+```
+
+Any Docker host works (Render/Railway/Fly free tiers). For Render, the included
+[`render.yaml`](render.yaml) makes it a one-click **Blueprint** deploy — push to
+GitHub, then *New → Blueprint → this repo*. Health check: `/api/health`. Note the
+SQLite DB is baked at build time, so it resets on redeploy (uploads don't
+persist across restarts) — fine for a demo, and the seed rebuilds all 30 samples.
+
+---
+
 ## Extending it
 
 - **Add a business profile** — write a new generator in `generators.py` and add

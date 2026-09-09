@@ -1,0 +1,11 @@
+# One-click deploy to Render (https://render.com) — a free web service running
+# the Docker image. Push this repo to GitHub, then in Render: New +  ->  Blueprint
+# -> pick this repo. Or point any Docker host at the Dockerfile.
+services:
+  - type: web
+    name: undercurrent
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
