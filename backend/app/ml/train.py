@@ -183,35 +183,45 @@ def _log_to_mlflow(metrics: dict, gbm, gbm_params: dict) -> None:
         print("  (mlflow not installed — skipping experiment tracking)")
         return
 
-    default_uri = f"sqlite:///{Path(__file__).resolve().parents[2] / 'mlflow.db'}"
-    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", default_uri))
-    mlflow.set_experiment("undercurrent-default-risk")
+    try:
+        backend_dir = Path(__file__).resolve().parents[2]
+        mlflow.set_tracking_uri(
+            os.environ.get("MLFLOW_TRACKING_URI", f"sqlite:///{backend_dir / 'mlflow.db'}")
+        )
+        # Pin artifacts to a local dir. A sqlite tracking store otherwise defaults
+        # the artifact root to the server-only "mlflow-artifacts:/" scheme, which
+        # makes log_artifact/log_model fail without a running tracking server.
+        exp_name = "undercurrent-default-risk"
+        if mlflow.get_experiment_by_name(exp_name) is None:
+            mlflow.create_experiment(
+                exp_name, artifact_location=(backend_dir / "mlruns").as_uri()
+            )
+        mlflow.set_experiment(exp_name)
 
-    scalar = {k: metrics[k] for k in (
-        "roc_auc", "pr_auc", "brier", "cv_auc_mean", "cv_auc_std",
-        "precision_default", "recall_default", "f1_default", "base_rate",
-    )}
+        scalar = {k: metrics[k] for k in (
+            "roc_auc", "pr_auc", "brier", "cv_auc_mean", "cv_auc_std",
+            "precision_default", "recall_default", "f1_default", "base_rate",
+        )}
 
-    with mlflow.start_run(run_name="gradient_boosting"):
-        mlflow.log_params(gbm_params)
-        mlflow.log_metrics(scalar)
-        for name in ("roc_pr.png", "calibration.png", "shap_summary.png"):
-            fp = PLOT_DIR / name
-            if fp.exists():
-                mlflow.log_artifact(str(fp), artifact_path="plots")
-        try:
+        with mlflow.start_run(run_name="gradient_boosting"):
+            mlflow.log_params(gbm_params)
+            mlflow.log_metrics(scalar)
+            for name in ("roc_pr.png", "calibration.png", "shap_summary.png"):
+                fp = PLOT_DIR / name
+                if fp.exists():
+                    mlflow.log_artifact(str(fp), artifact_path="plots")
             mlflow.sklearn.log_model(
                 gbm, artifact_path="model",
                 registered_model_name="undercurrent-default-risk",
             )
-        except Exception:  # registry needs a DB-backed store; fall back to a plain log
-            mlflow.sklearn.log_model(gbm, artifact_path="model")
 
-    with mlflow.start_run(run_name="logistic_baseline"):
-        mlflow.log_param("model", "LogisticRegression")
-        mlflow.log_metric("roc_auc", metrics["baseline_logistic_roc_auc"])
+        with mlflow.start_run(run_name="logistic_baseline"):
+            mlflow.log_param("model", "LogisticRegression")
+            mlflow.log_metric("roc_auc", metrics["baseline_logistic_roc_auc"])
 
-    print(f"  MLflow: logged 2 runs -> {mlflow.get_tracking_uri()}")
+        print(f"  MLflow: logged 2 runs -> {mlflow.get_tracking_uri()}")
+    except Exception as e:  # best-effort — never let tracking break training
+        print(f"  (mlflow logging skipped: {type(e).__name__}: {e})")
 
 
 if __name__ == "__main__":
