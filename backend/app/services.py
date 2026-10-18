@@ -55,3 +55,25 @@ def score_and_cache(db: Session, biz: models.Business) -> ScoreResult:
             direction=f.direction, explanation=f.explanation,
         ))
     return result
+
+
+def rescore(db: Session, biz: models.Business) -> ScoreResult:
+    """Recompute a business's score from its current ledger, *replacing* the
+    cached run.
+
+    This is what keeps the cached scores from going stale: change the scoring
+    code (weights, a factor, a threshold) and re-score a business without
+    rebuilding the whole database. The caller owns the commit.
+    """
+    run_ids = [
+        r.id for r in db.query(models.ScoreRun)
+        .filter(models.ScoreRun.business_id == biz.id)
+    ]
+    if run_ids:
+        db.query(models.ScoreFactor).filter(
+            models.ScoreFactor.score_run_id.in_(run_ids)
+        ).delete(synchronize_session=False)
+        db.query(models.ScoreRun).filter(
+            models.ScoreRun.id.in_(run_ids)
+        ).delete(synchronize_session=False)
+    return score_and_cache(db, biz)

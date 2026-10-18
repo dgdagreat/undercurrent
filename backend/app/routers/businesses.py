@@ -18,7 +18,7 @@ from .. import models, schemas
 from ..database import get_db
 from ..scoring import config, score_business, whatif
 from ..scoring.engine import InsufficientDataError, ScoreResult
-from ..services import frames_for
+from ..services import frames_for, rescore
 
 router = APIRouter(prefix="/api", tags=["businesses"])
 
@@ -213,3 +213,24 @@ def ml_prediction(business_id: int, db: Session = Depends(get_db)):
             detail="The ML model isn't trained yet. Run `python -m app.ml.train`.",
         )
     return schemas.MlPrediction(**result)
+
+
+@router.post("/businesses/{business_id}/score", response_model=schemas.ScoreOut)
+def recompute_score(business_id: int, db: Session = Depends(get_db)):
+    """Recompute and re-cache a business's score from its current ledger.
+
+    The listing/detail endpoints serve a *cached* score (written at seed/upload
+    time). This recomputes it live and replaces the cached run, so a change to
+    the scoring logic takes effect without rebuilding the database — removing the
+    "scores are cached at seed time" footgun.
+    """
+    biz = db.get(models.Business, business_id)
+    if biz is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+    try:
+        rescore(db, biz)
+    except InsufficientDataError as e:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=f"Can't score this business: {e}")
+    db.commit()
+    return _score_out(_latest_run(db, business_id))

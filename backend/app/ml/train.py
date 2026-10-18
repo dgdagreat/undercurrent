@@ -95,9 +95,10 @@ def train() -> dict:
     )
 
     # Headline model: gradient boosting.
-    gbm = GradientBoostingClassifier(
+    gbm_params = dict(
         n_estimators=350, max_depth=3, learning_rate=0.05, subsample=0.9, random_state=42
     )
+    gbm = GradientBoostingClassifier(**gbm_params)
     gbm.fit(X_train, y_train)
 
     # Interpretable baseline: standardized logistic regression.
@@ -157,7 +158,60 @@ def train() -> dict:
         MODEL_PATH,
     )
     METRICS_PATH.write_text(json.dumps(metrics, indent=2))
+    _log_to_mlflow(metrics, gbm, gbm_params)
     return metrics
+
+
+def _log_to_mlflow(metrics: dict, gbm, gbm_params: dict) -> None:
+    """Log this training run to MLflow, if it's installed (optional, dev-only).
+
+    Two runs under one experiment — the gradient-boosting model and the logistic
+    baseline — each with params, metrics, the eval plots as artifacts, and (for
+    the GBM) the serialized model registered in the MLflow model registry. This
+    makes runs comparable and the model versioned, the way a real ML team tracks
+    experiments. Training works fine without mlflow; `pip install -r
+    requirements-dev.txt` enables it.
+
+    View:  mlflow ui --backend-store-uri sqlite:///backend/mlflow.db
+    """
+    try:
+        import os
+
+        import mlflow
+        import mlflow.sklearn
+    except ImportError:
+        print("  (mlflow not installed — skipping experiment tracking)")
+        return
+
+    default_uri = f"sqlite:///{Path(__file__).resolve().parents[2] / 'mlflow.db'}"
+    mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", default_uri))
+    mlflow.set_experiment("undercurrent-default-risk")
+
+    scalar = {k: metrics[k] for k in (
+        "roc_auc", "pr_auc", "brier", "cv_auc_mean", "cv_auc_std",
+        "precision_default", "recall_default", "f1_default", "base_rate",
+    )}
+
+    with mlflow.start_run(run_name="gradient_boosting"):
+        mlflow.log_params(gbm_params)
+        mlflow.log_metrics(scalar)
+        for name in ("roc_pr.png", "calibration.png", "shap_summary.png"):
+            fp = PLOT_DIR / name
+            if fp.exists():
+                mlflow.log_artifact(str(fp), artifact_path="plots")
+        try:
+            mlflow.sklearn.log_model(
+                gbm, artifact_path="model",
+                registered_model_name="undercurrent-default-risk",
+            )
+        except Exception:  # registry needs a DB-backed store; fall back to a plain log
+            mlflow.sklearn.log_model(gbm, artifact_path="model")
+
+    with mlflow.start_run(run_name="logistic_baseline"):
+        mlflow.log_param("model", "LogisticRegression")
+        mlflow.log_metric("roc_auc", metrics["baseline_logistic_roc_auc"])
+
+    print(f"  MLflow: logged 2 runs -> {mlflow.get_tracking_uri()}")
 
 
 if __name__ == "__main__":

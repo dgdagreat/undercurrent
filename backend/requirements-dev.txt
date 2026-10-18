@@ -7,3 +7,5 @@ matplotlib==3.9.2
 # Notebook execution (notebooks/undercurrent_risk_model.ipynb).
 nbconvert
 ipykernel
+# Experiment tracking for app/ml/train.py (optional; logs runs + registers model).
+mlflow>=2.16,<3

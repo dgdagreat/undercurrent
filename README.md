@@ -249,6 +249,11 @@ The endpoint returns **503** (and the UI hides the panel) if the model isn't
 trained, so the rest of the app runs without it. An EDA + training walkthrough
 lives in [`notebooks/`](notebooks/).
 
+Training also logs to **MLflow** (when installed) — the gradient-boosting and
+logistic runs with their params, metrics, and eval plots, and the model is
+registered in the MLflow registry. Browse the experiment with
+`mlflow ui --backend-store-uri sqlite:///backend/mlflow.db`.
+
 ---
 
 ## Architecture
@@ -366,11 +371,11 @@ persist across restarts) — fine for a demo, and the seed rebuilds all 30 sampl
 
 ## Known limitations & notes for contributors
 
-- **Sample scores are cached at seed time.** Uploads are scored live at upload
-  time, but the 30 samples serve the score rows written by `app.seed`. After
-  changing anything in `scoring/`, re-run `python -m app.seed` or the samples
-  will show stale numbers. (A live re-score endpoint for samples would remove
-  this footgun — a good next step.)
+- **Scores are cached, but can be recomputed live.** The listing/detail
+  endpoints serve cached score rows (written at seed/upload time). After changing
+  anything in `scoring/`, `POST /api/businesses/{id}/score` recomputes and
+  replaces a business's cached score from its current ledger — no full re-seed
+  needed. (`python -m app.seed` still rebuilds everything from scratch.)
 - **Invoice generator has a cold-start ramp.** `gen_invoice()` only issues
   invoices *inside* the 24-month window, so the first ~2 months collect fewer
   matured payments and revenue ramps up artificially. This nudges the agency's
