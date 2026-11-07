@@ -9,6 +9,9 @@ Prod: the same process ALSO serves the built React app (single service) — see
 
 from __future__ import annotations
 
+import logging
+import threading
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,11 +20,36 @@ from fastapi.staticfiles import StaticFiles
 
 from .routers import businesses, uploads
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Warm the ML model off the request path at startup.
+
+    The /ml endpoint imports shap + scikit-learn and builds a SHAP explainer the
+    first time it's hit; doing it here means the first real request doesn't pay
+    for it. Runs in a daemon thread so it never delays startup or readiness — the
+    server starts listening (and /api/health responds) immediately, and the model
+    finishes warming a beat later. Non-fatal: /ml keeps its existing lazy load.
+    """
+    # Surface our INFO logs (e.g. the ML warm-up confirmation) through uvicorn's
+    # handler, so they appear alongside uvicorn's own startup output. We copy from
+    # the "uvicorn" logger because "uvicorn.error" carries no handler of its own.
+    app_logger = logging.getLogger("app")
+    app_logger.handlers = logging.getLogger("uvicorn").handlers
+    app_logger.setLevel(logging.INFO)
+
+    from .ml import model as ml_model
+
+    threading.Thread(target=ml_model.prewarm, name="ml-prewarm", daemon=True).start()
+    yield
+
+
 app = FastAPI(
     title="Undercurrent — Cash-Flow Underwriter",
     description="Explainable, alternative-data creditworthiness scoring for "
                 "small businesses with seasonal or invoice-driven revenue.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # The Vite dev server runs on a different port, so allow it during development.
