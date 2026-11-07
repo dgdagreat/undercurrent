@@ -1,0 +1,19 @@
+# What NOT to upload to Cloud Build when running `gcloud run deploy --source .`.
+# Mirrors .dockerignore: the frontend deps, the Python venv, and the SQLite DB
+# are all rebuilt/reseeded inside the image, so they'd only bloat the upload.
+# (Having this file also stops gcloud from auto-generating one from .gitignore.)
+
+**/.venv/
+**/node_modules/
+**/dist/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+backend/cashflow.db
+.git/
+.github/
+notebooks/
+docs/
+*.md
+.DS_Store
+.ipynb_checkpoints/

@@ -1,0 +1,37 @@
+name: CI
+
+# Run the backend test suite on every PR and on pushes to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    name: Backend tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Match the Dockerfile's python:3.11-slim runtime.
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          # requirements-dev.txt pulls in requirements.txt (-r) plus pytest and
+          # the plotting/notebook deps the suite imports, so this mirrors the
+          # environment the tests are run in locally.
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        working-directory: backend
+        # Use `python -m pytest` (not the bare `pytest` script) so the backend/
+        # working dir lands on sys.path — the tests do a top-level `import app`,
+        # and there's no editable install to put it there otherwise.
+        run: python -m pytest -q
