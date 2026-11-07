@@ -31,4 +31,7 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: pytest -q
+        # Use `python -m pytest` (not the bare `pytest` script) so the backend/
+        # working dir lands on sys.path — the tests do a top-level `import app`,
+        # and there's no editable install to put it there otherwise.
+        run: python -m pytest -q
