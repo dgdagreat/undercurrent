@@ -9,8 +9,8 @@ Prod: the same process ALSO serves the built React app (single service) — see
 
 from __future__ import annotations
 
+import asyncio
 import logging
-import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -23,13 +23,16 @@ from .routers import businesses, uploads
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Warm the ML model off the request path at startup.
+    """Warm the ML model during startup, before the app accepts traffic.
 
-    The /ml endpoint imports shap + scikit-learn and builds a SHAP explainer the
-    first time it's hit; doing it here means the first real request doesn't pay
-    for it. Runs in a daemon thread so it never delays startup or readiness — the
-    server starts listening (and /api/health responds) immediately, and the model
-    finishes warming a beat later. Non-fatal: /ml keeps its existing lazy load.
+    The /ml endpoint imports shap + scikit-learn and builds a SHAP explainer on
+    first use. We do that here, up front, so the first real request doesn't pay
+    for it. It runs *synchronously* during startup (in a worker thread we await),
+    not as a fire-and-forget background thread: hosts that throttle a container's
+    CPU between requests (e.g. Cloud Run) would starve a background thread so it
+    never finishes, leaving the first /ml slow. Startup CPU is always allocated,
+    so warming here completes before the service is marked ready — at the cost of
+    a few seconds' longer startup. Non-fatal: /ml keeps its existing lazy load.
     """
     # Surface our INFO logs (e.g. the ML warm-up confirmation) through uvicorn's
     # handler, so they appear alongside uvicorn's own startup output. We copy from
@@ -40,7 +43,7 @@ async def lifespan(app: FastAPI):
 
     from .ml import model as ml_model
 
-    threading.Thread(target=ml_model.prewarm, name="ml-prewarm", daemon=True).start()
+    await asyncio.to_thread(ml_model.prewarm)
     yield
 
 
