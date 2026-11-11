@@ -212,6 +212,29 @@ natural first target; it should be env-gated so the demo still runs from a bare
 
 ---
 
+## What-if simulator
+
+Every business page has a **what-if** panel that answers the reviewer's real
+question — *"what would it take to approve this?"* — by letting you nudge five
+levers and watching the grade and the factor breakdown move live:
+
+- **Revenue growth** — rotates the revenue trajectory (today's cash position held
+  fixed), so it moves the **trend** factor without secretly changing current cash.
+- **Expense cut** — scales operating costs down (helps DSCR and runway).
+- **Loan paydown** — lightens scheduled debt service, or models extra principal
+  as a one-off use of cash.
+- **Cash injection** — a one-off inflow (not revenue), so it lifts runway without
+  polluting revenue stability or trend.
+- **Opening buffer** — shifts the starting balance.
+
+Each lever is deliberately modeled to move the factor it *should* move and
+nothing else, so the "which factors changed" readout stays honest. The
+adjustments reshape the ledger **in memory** and rescore it through the exact
+same engine ([`scoring/whatif.py`](backend/app/scoring/whatif.py) →
+`POST /api/businesses/{id}/whatif`) — nothing is written to the database.
+
+---
+
 ## Machine-learning risk model (learned second opinion)
 
 Alongside the transparent rule-based grade, a trained **gradient-boosting model**
@@ -274,6 +297,7 @@ backend/                     FastAPI + pandas over SQLite
       decompose.py           Additive trend/seasonal/residual decomposition
       factors.py             The six factor computations
       engine.py              Orchestration -> overall score + breakdown
+      whatif.py              In-memory ledger reshaping for the what-if panel
       config.py              Weights + benchmark thresholds (all tunable)
     ml/                      ML risk model (learned second opinion)
       features.py            Shared feature extractor (train == serve)
@@ -281,7 +305,7 @@ backend/                     FastAPI + pandas over SQLite
       train.py               Fit + evaluate + SHAP -> artifacts/
       model.py               Lazy-loaded serving (probability + SHAP)
     routers/                 REST API (businesses.py, uploads.py)
-  tests/                     Scoring fairness + CSV ingestion + ML tests
+  tests/                     Scoring fairness, ingestion, sources, what-if, ML
 frontend/                    React (Vite) + Recharts dashboard
 ```
 
@@ -342,18 +366,34 @@ python -m pytest
 In production the **FastAPI process serves the built React app too** — one
 service, one origin, no CORS. The [`Dockerfile`](Dockerfile) builds the frontend,
 installs the backend, seeds the 30-business database into the image, and runs
-uvicorn; the trained ML model artifact is committed, so `/ml` works on boot.
+uvicorn on `$PORT`; the trained ML model artifact is committed and warmed at
+startup, so `/ml` works on boot without a cold first call.
+
+Run it anywhere Docker runs:
 
 ```bash
 docker build -t undercurrent .
 docker run -p 8000:8000 undercurrent      # open http://localhost:8000
 ```
 
-Any Docker host works (Render/Railway/Fly free tiers). For Render, the included
-[`render.yaml`](render.yaml) makes it a one-click **Blueprint** deploy — push to
-GitHub, then *New → Blueprint → this repo*. Health check: `/api/health`. Note the
-SQLite DB is baked at build time, so it resets on redeploy (uploads don't
-persist across restarts) — fine for a demo, and the seed rebuilds all 30 samples.
+**Google Cloud Run** is the target this project is set up for — it builds
+straight from the `Dockerfile` and can keep one instance warm so a portfolio link
+never greets a visitor with a cold start. The full walkthrough (always-warm vs.
+scale-to-zero, cost, teardown) is in **[DEPLOY.md](DEPLOY.md)**; the short version:
+
+```bash
+gcloud run deploy undercurrent --source . --region us-central1 \
+  --allow-unauthenticated --min-instances 1 --memory 1Gi
+```
+
+Any other Docker host works too (Railway, Fly, Render). The included
+[`render.yaml`](render.yaml) makes Render a one-click **Blueprint** deploy — push
+to GitHub, then *New → Blueprint → this repo*. Health check: `/api/health`.
+
+> The SQLite DB is baked into the image at build time, so it resets on redeploy
+> and uploads/re-scores don't persist across restarts — expected for a demo, and
+> the seed rebuilds all 30 samples on every boot. A real deploy would move state
+> to managed Postgres (Cloud SQL).
 
 ---
 
